@@ -197,6 +197,7 @@ tinygo-test:
 	$(TINYGO) test math
 	$(TINYGO) test math/cmplx
 	$(TINYGO) test text/scanner
+	$(TINYGO) test unicode/utf16
 	$(TINYGO) test unicode/utf8
 
 .PHONY: smoketest
