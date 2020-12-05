@@ -1,4 +1,4 @@
-// +build stm32,!stm32f103xx,!stm32f407
+// +build stm32,!stm32f103xx
 
 package machine
 

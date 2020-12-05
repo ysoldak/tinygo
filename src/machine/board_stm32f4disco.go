@@ -66,3 +66,49 @@ var (
 	}
 	SPI1 = &SPI0
 )
+
+// -- I2C ----------------------------------------------------------------------
+
+const (
+	// #===========#==========#==============#==============#=======#=======#
+	// | Interface | Hardware |  Bus(Freq)   | SDA/SCL Pins | AltFn | Alias |
+	// #===========#==========#==============#==============#=======#=======#
+	// |   I2C1    |   I2C1   | APB1(42 MHz) |   PB7/PB6    |   4   |   ~   |
+	// |   I2C2    |   I2C2   | APB1(42 MHz) |  PB11/PB10   |   4   |   ~   |
+	// |   I2C3    |   I2C1   | APB1(42 MHz) |   PB7/PB6    |   4   |   ~   |
+	// | --------- | -------- | ------------ | ------------ | ----- | ----- |
+	// |   I2C0    |   I2C1   | APB1(42 MHz) |   PB7/PB6    |   4   | I2C1  |
+	// #===========#==========#==============#==============#=======#=======#
+	NUM_I2C_INTERFACES = 3
+
+	I2C1_SDA_PIN = PB7 // I2C1 = hardware: I2C1
+	I2C1_SCL_PIN = PB6 //
+
+	I2C2_SDA_PIN = PB11 // I2C2 = hardware: I2C2
+	I2C2_SCL_PIN = PB10 //
+
+	I2C3_SDA_PIN = PB7 // I2C3 = hardware: I2C1
+	I2C3_SCL_PIN = PB6 //  (interface duplicated on second pair of pins)
+
+	I2C0_SDA_PIN = I2C1_SDA_PIN // I2C0 = alias: I2C1
+	I2C0_SCL_PIN = I2C1_SCL_PIN //
+
+	I2C_SDA_PIN = I2C0_SDA_PIN // default/primary I2C pins
+	I2C_SCL_PIN = I2C0_SCL_PIN //
+)
+
+var (
+	I2C1 = I2C{
+		Bus:             stm32.I2C1,
+		AltFuncSelector: stm32.AF4_I2C1_2_3,
+	}
+	I2C2 = I2C{
+		Bus:             stm32.I2C2,
+		AltFuncSelector: stm32.AF4_I2C1_2_3,
+	}
+	I2C3 = I2C{
+		Bus:             stm32.I2C1,
+		AltFuncSelector: stm32.AF4_I2C1_2_3,
+	}
+	I2C0 = I2C1
+)
