@@ -230,6 +230,8 @@ func enableAltFuncClock(bus unsafe.Pointer) {
 		stm32.RCC.APB2ENR.SetBits(stm32.RCC_APB2ENR_TIM8EN)
 	case unsafe.Pointer(stm32.TIM1): // TIM1 clock enable
 		stm32.RCC.APB2ENR.SetBits(stm32.RCC_APB2ENR_TIM1EN)
+	default:
+		panic("invalid stm32 clock bus")
 	}
 }
 
@@ -252,7 +254,7 @@ func (i2c I2C) getFreqRange(config I2CConfig) uint32 {
 	clock /= 1000000
 	// must be between 2 MHz (or 4 MHz for fast mode (Fm)) and 50 MHz, inclusive
 	var min, max uint32 = 2, 50
-	if config.Frequency > 10000 {
+	if config.Frequency > 100000 {
 		min = 4 // fast mode (Fm)
 	}
 	if clock < min {
@@ -281,7 +283,8 @@ func (i2c I2C) getRiseTime(config I2CConfig) uint32 {
 
 func (i2c I2C) getSpeed(config I2CConfig) uint32 {
 	ccr := func(pclk uint32, freq uint32, coeff uint32) uint32 {
-		return (((pclk - 1) / (freq * coeff)) + 1) & stm32.I2C_CCR_CCR_Msk
+		//return (((pclk - 1) / (freq * coeff)) + 1) & stm32.I2C_CCR_CCR_Msk
+		return (pclk / (freq * coeff)) & stm32.I2C_CCR_CCR_Msk
 	}
 	sm := func(pclk uint32, freq uint32) uint32 { // standard mode (Sm)
 		if s := ccr(pclk, freq, 2); s < 4 {

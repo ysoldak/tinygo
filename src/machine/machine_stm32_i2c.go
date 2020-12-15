@@ -152,13 +152,6 @@ func (i2c I2C) Configure(config I2CConfig) {
 	// 4. Program the I2C_CR1 register to enable the peripheral
 	// 5. Set the START bit in the I2C_CR1 register to generate a Start condition
 
-	// disable I2C interface before any configuration changes
-	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_PE)
-
-	// reset I2C bus
-	i2c.Bus.CR1.SetBits(stm32.I2C_CR1_SWRST)
-	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_SWRST)
-
 	// enable clock for I2C
 	enableAltFuncClock(unsafe.Pointer(i2c.Bus))
 
@@ -169,22 +162,35 @@ func (i2c I2C) Configure(config I2CConfig) {
 	}
 	i2c.configurePins(config)
 
+	// disable I2C interface before any configuration changes
+	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_PE)
+
+	// reset I2C bus
+	i2c.Bus.CR1.SetBits(stm32.I2C_CR1_SWRST)
+	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_SWRST)
+
 	// default to 100 kHz (Sm, standard mode) if no frequency is set
 	if config.Frequency == 0 {
 		config.Frequency = TWI_FREQ_100KHZ
 	}
 
 	// configure I2C input clock
+	println("freq", i2c.getFreqRange(config))
 	i2c.Bus.CR2.SetBits(i2c.getFreqRange(config))
 
 	// configure rise time
+	println("rise", i2c.getRiseTime(config))
 	i2c.Bus.TRISE.Set(i2c.getRiseTime(config))
 
+	//println(i2c.Bus.CCR.Get())
+	//println(i2c.getSpeed(config))
 	// configure clock control
 	i2c.Bus.CCR.Set(i2c.getSpeed(config))
 
 	// disable GeneralCall and NoStretch modes
 	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_ENGC | stm32.I2C_CR1_NOSTRETCH)
+	//i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_ENGC)
+	//i2c.Bus.CR1.SetBits(stm32.I2C_CR1_NOSTRETCH)
 
 	// enable I2C interface
 	i2c.Bus.CR1.ClearBits(stm32.I2C_CR1_PE)
