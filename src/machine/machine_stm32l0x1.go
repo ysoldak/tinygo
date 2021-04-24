@@ -5,8 +5,9 @@ package machine
 // Peripheral abstraction layer for the stm32l0
 
 import (
-	"device/stm32"
 	"unsafe"
+
+	"github.com/sago35/device/stm32"
 )
 
 // Enable peripheral clock

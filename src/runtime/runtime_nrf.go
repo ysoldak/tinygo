@@ -3,10 +3,11 @@
 package runtime
 
 import (
-	"device/nrf"
 	"machine"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/nrf"
 )
 
 type timeUnit int64

@@ -32,11 +32,12 @@
 package runtime
 
 import (
-	"device/arm"
-	"device/nxp"
 	"machine"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/nxp"
 )
 
 type timeUnit int64

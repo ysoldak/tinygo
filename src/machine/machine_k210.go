@@ -3,11 +3,12 @@
 package machine
 
 import (
-	"device/kendryte"
-	"device/riscv"
 	"errors"
 	"runtime/interrupt"
 	"unsafe"
+
+	"github.com/sago35/device/kendryte"
+	"github.com/sago35/device/riscv"
 )
 
 func CPUFrequency() uint32 {

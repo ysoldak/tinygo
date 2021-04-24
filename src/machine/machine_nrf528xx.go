@@ -3,9 +3,10 @@
 package machine
 
 import (
-	"device/nrf"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/nrf"
 )
 
 func CPUFrequency() uint32 {

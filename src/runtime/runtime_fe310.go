@@ -9,9 +9,10 @@ import (
 	"machine"
 	"unsafe"
 
-	"device/riscv"
-	"device/sifive"
 	"runtime/volatile"
+
+	"github.com/sago35/device/riscv"
+	"github.com/sago35/device/sifive"
 )
 
 type timeUnit int64

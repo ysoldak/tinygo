@@ -3,10 +3,11 @@
 package machine
 
 import (
-	"device/nxp"
 	"math/bits"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/nxp"
 )
 
 // Peripheral abstraction layer for the MIMXRT1062

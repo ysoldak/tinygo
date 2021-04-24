@@ -3,9 +3,10 @@
 package machine
 
 import (
-	"device/avr"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/avr"
 )
 
 const irq_USART0_RX = avr.IRQ_USART0_RX

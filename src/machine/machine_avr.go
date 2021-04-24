@@ -3,9 +3,10 @@
 package machine
 
 import (
-	"device/avr"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/avr"
 )
 
 type PinMode uint8

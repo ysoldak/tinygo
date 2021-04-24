@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/sam"
 	"runtime/interrupt"
+
+	"github.com/sago35/device/sam"
 )
 
 // UART1 on the Circuit Playground Express.

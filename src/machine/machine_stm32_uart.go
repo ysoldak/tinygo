@@ -5,10 +5,11 @@ package machine
 // Peripheral abstraction layer for UARTs on the stm32 family.
 
 import (
-	"device/stm32"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/stm32"
 )
 
 // UART representation

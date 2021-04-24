@@ -3,8 +3,9 @@
 package runtime
 
 import (
-	"device/avr"
 	"unsafe"
+
+	"github.com/sago35/device/avr"
 )
 
 const BOARD = "arduino"

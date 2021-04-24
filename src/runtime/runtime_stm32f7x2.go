@@ -3,8 +3,9 @@
 package runtime
 
 import (
-	"device/stm32"
 	"machine"
+
+	"github.com/sago35/device/stm32"
 )
 
 /*

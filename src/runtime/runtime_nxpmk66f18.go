@@ -32,9 +32,10 @@
 package runtime
 
 import (
-	"device/arm"
-	"device/nxp"
 	"machine"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/nxp"
 )
 
 const (

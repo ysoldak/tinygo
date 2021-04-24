@@ -8,13 +8,14 @@
 package machine
 
 import (
-	"device"
-	"device/arm"
-	"device/sam"
 	"errors"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device"
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/sam"
 )
 
 type PinMode uint8

@@ -8,12 +8,13 @@
 package machine
 
 import (
-	"device/arm"
-	"device/sam"
 	"errors"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/sam"
 )
 
 func CPUFrequency() uint32 {

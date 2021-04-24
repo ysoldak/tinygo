@@ -6,11 +6,12 @@
 package runtime
 
 import (
-	"device/kendryte"
-	"device/riscv"
 	"machine"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/kendryte"
+	"github.com/sago35/device/riscv"
 )
 
 type timeUnit int64

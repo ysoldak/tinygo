@@ -6,8 +6,9 @@ package machine
 // of MCUs.
 
 import (
-	"device/stm32"
 	"unsafe"
+
+	"github.com/sago35/device/stm32"
 )
 
 const (

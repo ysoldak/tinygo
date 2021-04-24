@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/avr"
 	"runtime/volatile"
+
+	"github.com/sago35/device/avr"
 )
 
 const (

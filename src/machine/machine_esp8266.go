@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/esp"
 	"runtime/volatile"
+
+	"github.com/sago35/device/esp"
 )
 
 func CPUFrequency() uint32 {

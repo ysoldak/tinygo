@@ -21,9 +21,10 @@ package runtime
 // size of that register in the MCU's TIM_Type structure
 
 import (
-	"device/stm32"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/stm32"
 )
 
 type timerInfo struct {

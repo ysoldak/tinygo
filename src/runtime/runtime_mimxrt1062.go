@@ -3,11 +3,12 @@
 package runtime
 
 import (
-	"device/arm"
-	"device/nxp"
 	"machine"
 	"math/bits"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/nxp"
 )
 
 const asyncScheduler = false

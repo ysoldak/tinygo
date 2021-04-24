@@ -3,11 +3,12 @@
 package machine
 
 import (
-	"device/arm"
-	"device/nrf"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/nrf"
 )
 
 // USBCDC is the USB CDC aka serial over USB interface on the nRF52840

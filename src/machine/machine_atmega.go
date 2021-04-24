@@ -3,10 +3,11 @@
 package machine
 
 import (
-	"device/avr"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/avr"
 )
 
 // I2C on AVR.

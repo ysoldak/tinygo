@@ -3,10 +3,11 @@
 package machine
 
 import (
-	"device/esp"
 	"errors"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/esp"
 )
 
 const peripheralClock = 80000000 // 80MHz

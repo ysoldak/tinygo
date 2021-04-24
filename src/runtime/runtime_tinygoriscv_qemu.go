@@ -3,9 +3,10 @@
 package runtime
 
 import (
-	"device/riscv"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/riscv"
 )
 
 // This file implements the VirtIO RISC-V interface implemented in QEMU, which

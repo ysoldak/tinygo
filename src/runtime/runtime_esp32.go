@@ -3,10 +3,11 @@
 package runtime
 
 import (
-	"device"
-	"device/esp"
 	"machine"
 	"unsafe"
+
+	"github.com/sago35/device"
+	"github.com/sago35/device/esp"
 )
 
 type timeUnit int64

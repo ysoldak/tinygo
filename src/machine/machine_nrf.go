@@ -3,10 +3,11 @@
 package machine
 
 import (
-	"device/nrf"
 	"errors"
 	"runtime/interrupt"
 	"unsafe"
+
+	"github.com/sago35/device/nrf"
 )
 
 var (

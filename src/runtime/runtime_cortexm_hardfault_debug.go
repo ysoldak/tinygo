@@ -3,8 +3,9 @@
 package runtime
 
 import (
-	"device/arm"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
 )
 
 const (

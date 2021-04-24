@@ -6,9 +6,10 @@ package runtime
 // QEMU.
 
 import (
-	"device/arm"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
 )
 
 type timeUnit int64

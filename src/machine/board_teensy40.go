@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/nxp"
 	"runtime/interrupt"
+
+	"github.com/sago35/device/nxp"
 )
 
 // Digital pins

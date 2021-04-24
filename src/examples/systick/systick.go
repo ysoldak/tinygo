@@ -1,8 +1,9 @@
 package main
 
 import (
-	"device/arm"
 	"machine"
+
+	"github.com/sago35/device/arm"
 )
 
 var timerCh = make(chan struct{}, 1)

@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/stm32"
 	"runtime/interrupt"
+
+	"github.com/sago35/device/stm32"
 )
 
 // https://wiki.stm32duino.com/index.php?title=File:Bluepillpinout.gif

@@ -3,8 +3,9 @@
 package machine
 
 import (
-	"device/sam"
 	"runtime/interrupt"
+
+	"github.com/sago35/device/sam"
 )
 
 // Definition for compatibility, but not used

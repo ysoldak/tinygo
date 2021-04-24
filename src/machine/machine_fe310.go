@@ -3,9 +3,10 @@
 package machine
 
 import (
-	"device/sifive"
 	"runtime/interrupt"
 	"unsafe"
+
+	"github.com/sago35/device/sifive"
 )
 
 func CPUFrequency() uint32 {

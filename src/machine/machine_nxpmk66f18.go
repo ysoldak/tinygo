@@ -32,9 +32,10 @@
 package machine
 
 import (
-	"device/nxp"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/nxp"
 )
 
 type PinMode uint8

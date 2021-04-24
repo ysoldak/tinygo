@@ -32,11 +32,12 @@
 package machine
 
 import (
-	"device/arm"
-	"device/nxp"
 	"errors"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/nxp"
 
 	_ "unsafe" // for go:linkname
 )

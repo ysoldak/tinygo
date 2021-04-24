@@ -3,12 +3,13 @@
 package runtime
 
 import (
-	"device/arm"
-	"device/sam"
 	"machine"
 	"runtime/interrupt"
 	"runtime/volatile"
 	"unsafe"
+
+	"github.com/sago35/device/arm"
+	"github.com/sago35/device/sam"
 )
 
 type timeUnit int64

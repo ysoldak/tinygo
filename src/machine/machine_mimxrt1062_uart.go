@@ -3,9 +3,10 @@
 package machine
 
 import (
-	"device/nxp"
 	"runtime/interrupt"
 	"runtime/volatile"
+
+	"github.com/sago35/device/nxp"
 )
 
 // UART peripheral abstraction layer for the MIMXRT1062

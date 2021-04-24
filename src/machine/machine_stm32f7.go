@@ -5,8 +5,9 @@ package machine
 // Peripheral abstraction layer for the stm32f4
 
 import (
-	"device/stm32"
 	"unsafe"
+
+	"github.com/sago35/device/stm32"
 )
 
 const (
