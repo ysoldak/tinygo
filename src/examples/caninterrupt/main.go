@@ -30,14 +30,15 @@ func main() {
 		}
 	}()
 
-	can1 := machine.CAN{Bus: sam.CAN1}
+	can1 := machine.CAN1
 	can1.Configure(machine.CANConfig{
 		TransferRate:   machine.CANTransferRate500kbps,
 		TransferRateFD: machine.CANTransferRate1000kbps,
 		Rx:             machine.CAN1_RX,
 		Tx:             machine.CAN1_TX,
 	})
-	can1.SetInterrupt(sam.CAN_IE_RF0NE, func(machine.CAN) {
+	// RF0NE : Rx FIFO 0 New Message Interrupt Enable
+	can1.SetInterrupt(sam.CAN_IE_RF0NE, func(*machine.CAN) {
 		rxMsg := machine.CANRxBufferElement{}
 		can1.RxRaw(&rxMsg)
 		m := canMsg{ch: 1, id: rxMsg.ID, dlc: rxMsg.DLC, data: rxMsg.Data()}
@@ -46,14 +47,15 @@ func main() {
 		}
 	})
 
-	can0 := machine.CAN{Bus: sam.CAN0}
+	can0 := machine.CAN0
 	can0.Configure(machine.CANConfig{
 		TransferRate:   machine.CANTransferRate500kbps,
 		TransferRateFD: machine.CANTransferRate1000kbps,
 		Rx:             machine.CAN0_RX,
 		Tx:             machine.CAN0_TX,
 	})
-	can0.SetInterrupt(sam.CAN_IE_RF0NE, func(machine.CAN) {
+	// RF0NE : Rx FIFO 0 New Message Interrupt Enable
+	can0.SetInterrupt(sam.CAN_IE_RF0NE, func(*machine.CAN) {
 		rxMsg := machine.CANRxBufferElement{}
 		can0.RxRaw(&rxMsg)
 		m := canMsg{ch: 2, id: rxMsg.ID, dlc: rxMsg.DLC, data: rxMsg.Data()}
@@ -63,9 +65,9 @@ func main() {
 	})
 
 	for {
-		can0.Tx(0x123, 8, []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF}, false, false)
+		can0.Tx(0x123, []byte{0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF}, false, false)
 		time.Sleep(time.Millisecond * 500)
-		can1.Tx(0x456, 3, []byte{0xAA, 0xBB, 0xCC}, false, false)
+		can1.Tx(0x456, []byte{0xAA, 0xBB, 0xCC}, false, false)
 		time.Sleep(time.Millisecond * 1000)
 	}
 }

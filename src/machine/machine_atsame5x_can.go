@@ -28,8 +28,7 @@ var CANTxFifo [2][(8 + 64) * CANTxFifoSize]byte
 var CANEvFifo [2][(8) * CANEvFifoSize]byte
 
 type CAN struct {
-	Bus     *sam.CAN_Type
-	Channel byte
+	Bus *sam.CAN_Type
 }
 
 type CANTransferRate uint32
@@ -65,10 +64,6 @@ func (can *CAN) Configure(config CANConfig) error {
 	}
 
 	can.Bus.CCCR.SetBits(sam.CAN_CCCR_CCE)
-	can.Channel = 0
-	if can.Bus == sam.CAN1 {
-		can.Channel = 1
-	}
 
 	can.Bus.CCCR.SetBits(sam.CAN_CCCR_BRSE | sam.CAN_CCCR_FDOE)
 	can.Bus.MRCFG.Set(sam.CAN_MRCFG_QOS_MEDIUM)
@@ -118,11 +113,11 @@ func (can *CAN) Configure(config CANConfig) error {
 	can.Bus.DBTP.Set((brp-1)<<sam.CAN_DBTP_DBRP_Pos | 8<<sam.CAN_DBTP_DTSEG1_Pos |
 		1<<sam.CAN_DBTP_DTSEG2_Pos | 3<<sam.CAN_DBTP_DSJW_Pos)
 
-	can.Bus.RXF0C.Set(sam.CAN_RXF0C_F0OM | CANRxFifoSize<<sam.CAN_RXF0C_F0S_Pos | uint32(uintptr(unsafe.Pointer(&CANRxFifo[can.Channel][0])))&0xFFFF)
+	can.Bus.RXF0C.Set(sam.CAN_RXF0C_F0OM | CANRxFifoSize<<sam.CAN_RXF0C_F0S_Pos | uint32(uintptr(unsafe.Pointer(&CANRxFifo[can.instance()][0])))&0xFFFF)
 	can.Bus.RXESC.Set(sam.CAN_RXESC_F0DS_DATA64)
 	can.Bus.TXESC.Set(sam.CAN_TXESC_TBDS_DATA64)
-	can.Bus.TXBC.Set(CANTxFifoSize<<sam.CAN_TXBC_TFQS_Pos | 0<<sam.CAN_TXBC_NDTB_Pos | uint32(uintptr(unsafe.Pointer(&CANTxFifo[can.Channel][0])))&0xFFFF)
-	can.Bus.TXEFC.Set(CANEvFifoSize<<sam.CAN_TXEFC_EFS_Pos | uint32(uintptr(unsafe.Pointer(&CANEvFifo[can.Channel][0])))&0xFFFF)
+	can.Bus.TXBC.Set(CANTxFifoSize<<sam.CAN_TXBC_TFQS_Pos | 0<<sam.CAN_TXBC_NDTB_Pos | uint32(uintptr(unsafe.Pointer(&CANTxFifo[can.instance()][0])))&0xFFFF)
+	can.Bus.TXEFC.Set(CANEvFifoSize<<sam.CAN_TXEFC_EFS_Pos | uint32(uintptr(unsafe.Pointer(&CANEvFifo[can.instance()][0])))&0xFFFF)
 
 	can.Bus.TSCC.Set(sam.CAN_TSCC_TSS_INC)
 
@@ -141,7 +136,7 @@ func (can *CAN) Configure(config CANConfig) error {
 	}
 
 	mode := PinCAN0
-	if can.Channel == 1 {
+	if can.instance() == 1 {
 		mode = PinCAN1
 	}
 
@@ -155,8 +150,8 @@ func (can *CAN) Configure(config CANConfig) error {
 // constant 2 and 32 here beacuse th SAM E51/E54 has 2 CAN and 32 interrupt
 // sources.
 var (
-	canInstances [2]CAN
-	canCallbacks [2][32]func(CAN)
+	canInstances [2]*CAN
+	canCallbacks [2][32]func(*CAN)
 )
 
 // SetInterrupt sets an interrupt to be executed when a particular CAN state.
@@ -164,7 +159,7 @@ var (
 // This call will replace a previously set callback. You can pass a nil func
 // to unset the CAN interrupt. If you do so, the change parameter is ignored
 // and can be set to any value (such as 0).
-func (can CAN) SetInterrupt(ie uint32, callback func(CAN)) error {
+func (can *CAN) SetInterrupt(ie uint32, callback func(*CAN)) error {
 	if callback == nil {
 		// Disable this CAN interrupt
 		can.Bus.IE.ClearBits(ie)
@@ -214,15 +209,15 @@ func (can CAN) SetInterrupt(ie uint32, callback func(CAN)) error {
 }
 
 // TxFifoIsFull returns whether TxFifo is full or not.
-func (can CAN) TxFifoIsFull() bool {
+func (can *CAN) TxFifoIsFull() bool {
 	return (can.Bus.TXFQS.Get() & sam.CAN_TXFQS_TFQF_Msk) == sam.CAN_TXFQS_TFQF_Msk
 }
 
 // TxRaw sends a CAN Frame according to CANTxBufferElement.
-func (can CAN) TxRaw(e *CANTxBufferElement) {
+func (can *CAN) TxRaw(e *CANTxBufferElement) {
 	putIndex := (can.Bus.TXFQS.Get() & sam.CAN_TXFQS_TFQPI_Msk) >> sam.CAN_TXFQS_TFQPI_Pos
 
-	f := CANTxFifo[can.Channel][putIndex*(8+64) : (putIndex+1)*(8+64)]
+	f := CANTxFifo[can.instance()][putIndex*(8+64) : (putIndex+1)*(8+64)]
 	id := e.ID
 	if !e.XTD {
 		// standard identifier is stored into ID[28:18]
@@ -266,7 +261,8 @@ func (can CAN) TxRaw(e *CANTxBufferElement) {
 
 // The Tx transmits CAN frames. It is easier to use than TxRaw, but not as
 // flexible.
-func (can CAN) Tx(id uint32, length byte, data []byte, isFD, isExtendedID bool) {
+func (can *CAN) Tx(id uint32, data []byte, isFD, isExtendedID bool) {
+	length := byte(len(data))
 	dlc := CANLengthToDlc(length, true)
 
 	e := CANTxBufferElement{
@@ -294,27 +290,27 @@ func (can CAN) Tx(id uint32, length byte, data []byte, isFD, isExtendedID bool) 
 }
 
 // RxFifoSize returns the number of CAN Frames currently stored in the RXFifo.
-func (can CAN) RxFifoSize() int {
+func (can *CAN) RxFifoSize() int {
 	sz := (can.Bus.RXF0S.Get() & sam.CAN_RXF0S_F0FL_Msk) >> sam.CAN_RXF0S_F0FL_Pos
 	return int(sz)
 }
 
 // RxFifoIsFull returns whether RxFifo is full or not.
-func (can CAN) RxFifoIsFull() bool {
+func (can *CAN) RxFifoIsFull() bool {
 	sz := (can.Bus.RXF0S.Get() & sam.CAN_RXF0S_F0FL_Msk) >> sam.CAN_RXF0S_F0FL_Pos
 	return sz == CANRxFifoSize
 }
 
 // RxFifoIsEmpty returns whether RxFifo is empty or not.
-func (can CAN) RxFifoIsEmpty() bool {
+func (can *CAN) RxFifoIsEmpty() bool {
 	sz := (can.Bus.RXF0S.Get() & sam.CAN_RXF0S_F0FL_Msk) >> sam.CAN_RXF0S_F0FL_Pos
 	return sz == 0
 }
 
 // RxRaw copies the received CAN frame to CANRxBufferElement.
-func (can CAN) RxRaw(e *CANRxBufferElement) {
+func (can *CAN) RxRaw(e *CANRxBufferElement) {
 	idx := (can.Bus.RXF0S.Get() & sam.CAN_RXF0S_F0GI_Msk) >> sam.CAN_RXF0S_F0GI_Pos
-	f := CANRxFifo[can.Channel][idx*(8+64):]
+	f := CANRxFifo[can.instance()][idx*(8+64):]
 
 	e.ESI = false
 	if (f[3] & 0x80) != 0x00 {
@@ -368,11 +364,19 @@ func (can CAN) RxRaw(e *CANRxBufferElement) {
 
 // Rx receives a CAN frame. It is easier to use than RxRaw, but not as
 // flexible.
-func (can CAN) Rx() (id uint32, dlc byte, data []byte, isFd, isExtendedID bool) {
+func (can *CAN) Rx() (id uint32, dlc byte, data []byte, isFd, isExtendedID bool) {
 	e := CANRxBufferElement{}
 	can.RxRaw(&e)
 	length := CANDlcToLength(e.DLC, e.FDF)
 	return e.ID, length, e.DB[:length], e.FDF, e.XTD
+}
+
+func (can *CAN) instance() byte {
+	if can.Bus == sam.CAN0 {
+		return 0
+	} else {
+		return 1
+	}
 }
 
 // CANTxBufferElement is a struct that corresponds to the same5x' Tx Buffer
