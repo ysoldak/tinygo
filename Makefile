@@ -206,6 +206,7 @@ TEST_PACKAGES = \
 	crypto/des \
 	crypto/dsa \
 	crypto/elliptic/internal/fiat \
+	crypto/hmac \
 	crypto/internal/subtle \
 	crypto/md5 \
 	crypto/rc4 \
@@ -234,9 +235,11 @@ TEST_PACKAGES = \
 	os \
 	path \
 	reflect \
+	strconv \
 	testing \
 	testing/iotest \
 	text/scanner \
+	text/template/parse \
 	unicode \
 	unicode/utf16 \
 	unicode/utf8 \

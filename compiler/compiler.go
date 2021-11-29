@@ -23,7 +23,7 @@ import (
 // Version of the compiler pacakge. Must be incremented each time the compiler
 // package changes in a way that affects the generated LLVM module.
 // This version is independent of the TinyGo version number.
-const Version = 25 // last change: add "target-cpu" and "target-features" attributes
+const Version = 26 // last change: implement recover
 
 func init() {
 	llvm.InitializeAllTargets()
@@ -142,6 +142,8 @@ type builder struct {
 	currentBlock      *ssa.BasicBlock
 	phis              []phiNode
 	deferPtr          llvm.Value
+	deferFrame        llvm.Value
+	landingpad        llvm.BasicBlock
 	difunc            llvm.Metadata
 	dilocals          map[*types.Var]llvm.Metadata
 	allDeferFuncs     []interface{}
@@ -985,6 +987,12 @@ func (b *builder) createFunction() {
 		}
 	}
 
+	if b.hasDeferFrame() {
+		// Create the landing pad block, where execution continues after a
+		// panic.
+		b.createLandingPad()
+	}
+
 	// Resolve phi nodes
 	for _, phi := range b.phis {
 		block := phi.ssa.Block()
@@ -1113,9 +1121,12 @@ func (b *builder) createInstruction(instr ssa.Instruction) {
 		b.createMapUpdate(mapType.Key(), m, key, value, instr.Pos())
 	case *ssa.Panic:
 		value := b.getValue(instr.X)
-		b.createRuntimeCall("_panic", []llvm.Value{value}, "")
+		b.createRuntimeInvoke("_panic", []llvm.Value{value}, "")
 		b.CreateUnreachable()
 	case *ssa.Return:
+		if b.hasDeferFrame() {
+			b.createRuntimeCall("destroyDeferFrame", []llvm.Value{b.deferFrame}, "")
+		}
 		if len(instr.Results) == 0 {
 			b.CreateRetVoid()
 		} else if len(instr.Results) == 1 {
@@ -1304,7 +1315,13 @@ func (b *builder) createBuiltin(argTypes []types.Type, argValues []llvm.Value, c
 		cplx := argValues[0]
 		return b.CreateExtractValue(cplx, 0, "real"), nil
 	case "recover":
-		return b.createRuntimeCall("_recover", nil, ""), nil
+		useParentFrame := uint64(0)
+		if b.hasDeferFrame() {
+			// recover() should return the panic value of the parent function,
+			// not of the current function.
+			useParentFrame = 1
+		}
+		return b.createRuntimeCall("_recover", []llvm.Value{llvm.ConstInt(b.ctx.Int1Type(), useParentFrame, false)}, ""), nil
 	case "ssa:wrapnilchk":
 		// TODO: do an actual nil check?
 		return argValues[0], nil
@@ -1391,6 +1408,12 @@ func (b *builder) createFunctionCall(instr *ssa.CallCommon) (llvm.Value, error) 
 			return b.createVolatileLoad(instr)
 		case strings.HasPrefix(name, "runtime/volatile.Store"):
 			return b.createVolatileStore(instr)
+		case name == "runtime.supportsRecover":
+			supportsRecover := uint64(0)
+			if b.supportsRecover() {
+				supportsRecover = 1
+			}
+			return llvm.ConstInt(b.ctx.Int1Type(), supportsRecover, false), nil
 		case strings.HasPrefix(name, "sync/atomic."):
 			val, ok := b.createAtomicOp(instr)
 			if ok {
@@ -1456,7 +1479,7 @@ func (b *builder) createFunctionCall(instr *ssa.CallCommon) (llvm.Value, error) 
 		params = append(params, llvm.Undef(b.i8ptrType))
 	}
 
-	return b.createCall(callee, params, ""), nil
+	return b.createInvoke(callee, params, ""), nil
 }
 
 // getValue returns the LLVM value of a constant, function value, global, or

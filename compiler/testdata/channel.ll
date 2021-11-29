@@ -5,9 +5,11 @@ target triple = "wasm32-unknown-wasi"
 
 %runtime.channel = type { i32, i32, i8, %runtime.channelBlockedList*, i32, i32, i32, i8* }
 %runtime.channelBlockedList = type { %runtime.channelBlockedList*, %"internal/task.Task"*, %runtime.chanSelectState*, { %runtime.channelBlockedList*, i32, i32 } }
-%"internal/task.Task" = type { %"internal/task.Task"*, i8*, i64, %"internal/task.state" }
+%"internal/task.Task" = type { %"internal/task.Task"*, i8*, i64, %"internal/task.state", %"internal/task.DeferFrame"* }
 %"internal/task.state" = type { i32, i8*, %"internal/task.stackState", i1 }
 %"internal/task.stackState" = type { i32, i32 }
+%"internal/task.DeferFrame" = type { i8*, i8*, %"internal/task.DeferFrame"*, i1, %runtime._interface }
+%runtime._interface = type { i32, i8* }
 %runtime.chanSelectState = type { %runtime.channel*, i8* }
 
 declare noalias nonnull i8* @runtime.alloc(i32, i8*, i8*, i8*)

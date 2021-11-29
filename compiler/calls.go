@@ -33,8 +33,9 @@ const (
 	paramIsDeferenceableOrNull = 1 << iota
 )
 
-// createCall creates a new call to runtime.<fnName> with the given arguments.
-func (b *builder) createRuntimeCall(fnName string, args []llvm.Value, name string) llvm.Value {
+// createRuntimeCallCommon creates a runtime call. Use createRuntimeCall or
+// createRuntimeInvoke instead.
+func (b *builder) createRuntimeCallCommon(fnName string, args []llvm.Value, name string, isInvoke bool) llvm.Value {
 	fn := b.program.ImportedPackage("runtime").Members[fnName].(*ssa.Function)
 	llvmFn := b.getFunction(fn)
 	if llvmFn.IsNil() {
@@ -42,7 +43,25 @@ func (b *builder) createRuntimeCall(fnName string, args []llvm.Value, name strin
 	}
 	args = append(args, llvm.Undef(b.i8ptrType))            // unused context parameter
 	args = append(args, llvm.ConstPointerNull(b.i8ptrType)) // coroutine handle
+	if isInvoke {
+		return b.createInvoke(llvmFn, args, name)
+	}
 	return b.createCall(llvmFn, args, name)
+}
+
+// createRuntimeCall creates a new call to runtime.<fnName> with the given
+// arguments.
+func (b *builder) createRuntimeCall(fnName string, args []llvm.Value, name string) llvm.Value {
+	return b.createRuntimeCallCommon(fnName, args, name, false)
+}
+
+// createRuntimeInvoke creates a new call to runtime.<fnName> with the given
+// arguments. If the runtime call panics, control flow is diverted to the
+// landing pad block.
+// Note that "invoke" here is meant in the LLVM sense (a call that can
+// panic/throw), not in the Go sense (an interface method call).
+func (b *builder) createRuntimeInvoke(fnName string, args []llvm.Value, name string) llvm.Value {
+	return b.createRuntimeCallCommon(fnName, args, name, true)
 }
 
 // createCall creates a call to the given function with the arguments possibly
@@ -54,6 +73,15 @@ func (b *builder) createCall(fn llvm.Value, args []llvm.Value, name string) llvm
 		expanded = append(expanded, fragments...)
 	}
 	return b.CreateCall(fn, expanded, name)
+}
+
+// createInvoke is like createCall but continues execution at the landing pad if
+// the call resulted in a panic.
+func (b *builder) createInvoke(fn llvm.Value, args []llvm.Value, name string) llvm.Value {
+	if b.hasDeferFrame() {
+		b.createInvokeCheckpoint()
+	}
+	return b.createCall(fn, args, name)
 }
 
 // Expand an argument type to a list that can be used in a function call

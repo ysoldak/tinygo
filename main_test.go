@@ -184,6 +184,13 @@ func runPlatTests(options compileopts.Options, tests []string, t *testing.T) {
 			runTest("rand.go", options, t, nil, nil)
 		})
 	}
+	if options.Target != "wasi" && options.Target != "wasm" {
+		// The recover() builtin isn't supported yet on WebAssembly and Windows.
+		t.Run("recover.go", func(t *testing.T) {
+			t.Parallel()
+			runTest("recover.go", options, t, nil, nil)
+		})
+	}
 }
 
 // Due to some problems with LLD, we cannot run links in parallel, or in parallel with compiles.
