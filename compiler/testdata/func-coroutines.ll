@@ -23,14 +23,14 @@ entry:
   %1 = icmp eq i32 %0, 0
   br i1 %1, label %fpcall.throw, label %fpcall.next
 
-fpcall.throw:                                     ; preds = %entry
-  call void @runtime.nilPanic(i8* undef, i8* null) #0
-  unreachable
-
 fpcall.next:                                      ; preds = %entry
   %2 = inttoptr i32 %0 to void (i32, i8*, i8*)*
   call void %2(i32 3, i8* %callback.context, i8* undef) #0
   ret void
+
+fpcall.throw:                                     ; preds = %entry
+  call void @runtime.nilPanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 declare i32 @runtime.getFuncPtr(i8*, i32, i8* dereferenceable_or_null(1), i8*, i8*)

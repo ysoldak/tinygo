@@ -32,13 +32,13 @@ entry:
   %0 = icmp ult i32 %s.len, 4
   br i1 %0, label %slicetoarray.throw, label %slicetoarray.next
 
-slicetoarray.throw:                               ; preds = %entry
-  call void @runtime.sliceToArrayPointerPanic(i8* undef, i8* null) #0
-  unreachable
-
 slicetoarray.next:                                ; preds = %entry
   %1 = bitcast i32* %s.data to [4 x i32]*
   ret [4 x i32]* %1
+
+slicetoarray.throw:                               ; preds = %entry
+  call void @runtime.sliceToArrayPointerPanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 declare void @runtime.sliceToArrayPointerPanic(i8*, i8*)
@@ -49,12 +49,12 @@ entry:
   %makeslice = call i8* @runtime.alloc(i32 24, i8* nonnull inttoptr (i32 3 to i8*), i8* undef, i8* null) #0
   br i1 false, label %slicetoarray.throw, label %slicetoarray.next
 
-slicetoarray.throw:                               ; preds = %entry
-  unreachable
-
 slicetoarray.next:                                ; preds = %entry
   %0 = bitcast i8* %makeslice to [4 x i32]*
   ret [4 x i32]* %0
+
+slicetoarray.throw:                               ; preds = %entry
+  unreachable
 }
 
 ; Function Attrs: nounwind
@@ -67,15 +67,15 @@ entry:
   %4 = or i1 %3, %0
   br i1 %4, label %unsafe.Slice.throw, label %unsafe.Slice.next
 
-unsafe.Slice.throw:                               ; preds = %entry
-  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
-  unreachable
-
 unsafe.Slice.next:                                ; preds = %entry
   %5 = insertvalue { i32*, i32, i32 } undef, i32* %ptr, 0
   %6 = insertvalue { i32*, i32, i32 } %5, i32 %len, 1
   %7 = insertvalue { i32*, i32, i32 } %6, i32 %len, 2
   ret { i32*, i32, i32 } %7
+
+unsafe.Slice.throw:                               ; preds = %entry
+  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 declare void @runtime.unsafeSlicePanic(i8*, i8*)
@@ -88,16 +88,16 @@ entry:
   %2 = and i1 %0, %1
   br i1 %2, label %unsafe.Slice.throw, label %unsafe.Slice.next
 
-unsafe.Slice.throw:                               ; preds = %entry
-  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
-  unreachable
-
 unsafe.Slice.next:                                ; preds = %entry
   %3 = zext i16 %len to i32
   %4 = insertvalue { i8*, i32, i32 } undef, i8* %ptr, 0
   %5 = insertvalue { i8*, i32, i32 } %4, i32 %3, 1
   %6 = insertvalue { i8*, i32, i32 } %5, i32 %3, 2
   ret { i8*, i32, i32 } %6
+
+unsafe.Slice.throw:                               ; preds = %entry
+  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 ; Function Attrs: nounwind
@@ -110,16 +110,16 @@ entry:
   %4 = or i1 %3, %0
   br i1 %4, label %unsafe.Slice.throw, label %unsafe.Slice.next
 
-unsafe.Slice.throw:                               ; preds = %entry
-  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
-  unreachable
-
 unsafe.Slice.next:                                ; preds = %entry
   %5 = trunc i64 %len to i32
   %6 = insertvalue { i32*, i32, i32 } undef, i32* %ptr, 0
   %7 = insertvalue { i32*, i32, i32 } %6, i32 %5, 1
   %8 = insertvalue { i32*, i32, i32 } %7, i32 %5, 2
   ret { i32*, i32, i32 } %8
+
+unsafe.Slice.throw:                               ; preds = %entry
+  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 ; Function Attrs: nounwind
@@ -132,16 +132,16 @@ entry:
   %4 = or i1 %3, %0
   br i1 %4, label %unsafe.Slice.throw, label %unsafe.Slice.next
 
-unsafe.Slice.throw:                               ; preds = %entry
-  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
-  unreachable
-
 unsafe.Slice.next:                                ; preds = %entry
   %5 = trunc i64 %len to i32
   %6 = insertvalue { i32*, i32, i32 } undef, i32* %ptr, 0
   %7 = insertvalue { i32*, i32, i32 } %6, i32 %5, 1
   %8 = insertvalue { i32*, i32, i32 } %7, i32 %5, 2
   ret { i32*, i32, i32 } %8
+
+unsafe.Slice.throw:                               ; preds = %entry
+  call void @runtime.unsafeSlicePanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 attributes #0 = { nounwind }

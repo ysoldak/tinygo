@@ -39,14 +39,14 @@ entry:
   %.not = icmp ult i32 %index, %s.len
   br i1 %.not, label %lookup.next, label %lookup.throw
 
-lookup.throw:                                     ; preds = %entry
-  call void @runtime.lookupPanic(i8* undef, i8* null) #0
-  unreachable
-
 lookup.next:                                      ; preds = %entry
   %0 = getelementptr inbounds i8, i8* %s.data, i32 %index
   %1 = load i8, i8* %0, align 1
   ret i8 %1
+
+lookup.throw:                                     ; preds = %entry
+  call void @runtime.lookupPanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 declare void @runtime.lookupPanic(i8*, i8*)
@@ -84,14 +84,14 @@ entry:
   %.not = icmp ult i32 %0, %s.len
   br i1 %.not, label %lookup.next, label %lookup.throw
 
-lookup.throw:                                     ; preds = %entry
-  call void @runtime.lookupPanic(i8* undef, i8* null) #0
-  unreachable
-
 lookup.next:                                      ; preds = %entry
   %1 = getelementptr inbounds i8, i8* %s.data, i32 %0
   %2 = load i8, i8* %1, align 1
   ret i8 %2
+
+lookup.throw:                                     ; preds = %entry
+  call void @runtime.lookupPanic(i8* undef, i8* null) #0
+  unreachable
 }
 
 attributes #0 = { nounwind }
