@@ -9,6 +9,7 @@ import (
 var (
 	validGCOptions            = []string{"none", "leaking", "extalloc", "conservative"}
 	validSchedulerOptions     = []string{"none", "tasks", "coroutines", "asyncify"}
+	validUnwinderOptions      = []string{"none", "simple"}
 	validSerialOptions        = []string{"none", "uart", "usb"}
 	validPrintSizeOptions     = []string{"none", "short", "full"}
 	validPanicStrategyOptions = []string{"print", "trap"}
@@ -27,6 +28,7 @@ type Options struct {
 	GC              string
 	PanicStrategy   string
 	Scheduler       string
+	Unwinder        string
 	Serial          string
 	PrintIR         bool
 	DumpSSA         bool
@@ -90,6 +92,14 @@ func (o *Options) Verify() error {
 			return fmt.Errorf(`invalid panic option '%s': valid values are %s`,
 				o.PanicStrategy,
 				strings.Join(validPanicStrategyOptions, ", "))
+		}
+	}
+
+	if o.Unwinder != "" {
+		if !isInArray(validUnwinderOptions, o.Unwinder) {
+			return fmt.Errorf("invalid flag -unwind=%#v: valid values are %s",
+				o.Unwinder,
+				strings.Join(validUnwinderOptions, ", "))
 		}
 	}
 

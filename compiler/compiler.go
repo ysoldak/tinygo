@@ -52,6 +52,7 @@ type Config struct {
 
 	// Various compiler options that determine how code is generated.
 	Scheduler          string
+	Unwinder           string
 	FuncImplementation string
 	AutomaticStackSize bool
 	DefaultStackSize   uint64

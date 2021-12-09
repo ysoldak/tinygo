@@ -108,6 +108,7 @@ func TestCompiler(t *testing.T) {
 				CodeModel:          config.CodeModel(),
 				RelocationModel:    config.RelocationModel(),
 				Scheduler:          config.Scheduler(),
+				Unwinder:           config.Unwinder(),
 				FuncImplementation: config.FuncImplementation(),
 				AutomaticStackSize: config.AutomaticStackSize(),
 				DefaultStackSize:   config.Target.DefaultStackSize,

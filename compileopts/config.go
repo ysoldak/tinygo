@@ -191,6 +191,30 @@ func (c *Config) PanicStrategy() string {
 	return c.Options.PanicStrategy
 }
 
+// Unwinder returns the unwinder used. It can be "simple" or "none".
+// If no unwinder has been specified on the command line, an appropriate unwind
+// strategy for the target architecture is chosen.
+func (c *Config) Unwinder() string {
+	unwinder := c.Options.Unwinder
+	if unwinder == "" {
+		arch := strings.Split(c.Triple(), "-")[0]
+		switch arch {
+		case "wasm32":
+			// Probably needs to be implemented using the exception handling
+			// proposal of WebAssembly:
+			// https://github.com/WebAssembly/exception-handling
+			unwinder = "none"
+		case "avr", "riscv64", "xtensa":
+			// TODO: add support for these architectures
+			unwinder = "none"
+		default:
+			unwinder = "simple"
+		}
+
+	}
+	return unwinder
+}
+
 // AutomaticStackSize returns whether goroutine stack sizes should be determined
 // automatically at compile time, if possible. If it is false, no attempt is
 // made.

@@ -1141,6 +1141,7 @@ func main() {
 	gc := flag.String("gc", "", "garbage collector to use (none, leaking, extalloc, conservative)")
 	panicStrategy := flag.String("panic", "print", "panic strategy (print, trap)")
 	scheduler := flag.String("scheduler", "", "which scheduler to use (none, coroutines, tasks, asyncify)")
+	unwinder := flag.String("unwind", "", "which unwind strategy to use (none, simple)")
 	serial := flag.String("serial", "", "which serial output to use (none, uart, usb)")
 	printIR := flag.Bool("printir", false, "print LLVM IR")
 	dumpSSA := flag.Bool("dumpssa", false, "dump internal Go SSA")
@@ -1223,6 +1224,7 @@ func main() {
 		GC:              *gc,
 		PanicStrategy:   *panicStrategy,
 		Scheduler:       *scheduler,
+		Unwinder:        *unwinder,
 		Serial:          *serial,
 		PrintIR:         *printIR,
 		DumpSSA:         *dumpSSA,
@@ -1431,6 +1433,7 @@ func main() {
 		fmt.Printf("build tags:        %s\n", strings.Join(config.BuildTags(), " "))
 		fmt.Printf("garbage collector: %s\n", config.GC())
 		fmt.Printf("scheduler:         %s\n", config.Scheduler())
+		fmt.Printf("unwinder:          %s\n", config.Unwinder())
 		fmt.Printf("cached GOROOT:     %s\n", cachedGOROOT)
 	case "list":
 		config, err := builder.NewConfig(options)

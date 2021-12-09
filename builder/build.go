@@ -139,6 +139,7 @@ func Build(pkgName, outpath string, config *compileopts.Config, action func(Buil
 		SizeLevel:       sizeLevel,
 
 		Scheduler:          config.Scheduler(),
+		Unwinder:           config.Unwinder(),
 		FuncImplementation: config.FuncImplementation(),
 		AutomaticStackSize: config.AutomaticStackSize(),
 		DefaultStackSize:   config.Target.DefaultStackSize,

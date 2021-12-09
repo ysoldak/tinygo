@@ -25,18 +25,7 @@ import (
 // supportsRecover returns whether the compiler supports the recover() builtin
 // for the current architecture.
 func (b *builder) supportsRecover() bool {
-	switch b.archFamily() {
-	case "wasm32":
-		// Probably needs to be implemented using the exception handling
-		// proposal of WebAssembly:
-		// https://github.com/WebAssembly/exception-handling
-		return false
-	case "avr", "riscv64", "xtensa":
-		// TODO: add support for these architectures
-		return false
-	default:
-		return true
-	}
+	return b.Unwinder != "none"
 }
 
 // hasDeferFrame returns whether the current function needs to catch panics and
