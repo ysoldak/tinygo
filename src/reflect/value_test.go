@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	. "reflect"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -801,6 +802,36 @@ func TestClearMap(t *testing.T) {
 		if !DeepEqual(test.m, test.expect) {
 			t.Errorf("Clear(map) got %v, expected %v", test.m, test.expect)
 		}
+	}
+}
+
+func TestCopyArrayToSlice(t *testing.T) {
+	// Test copying array <=64 bits and >64bits
+	// See issue #4554
+	a1 := [1]int64{1}
+	s1 := make([]int64, 1)
+	a2 := [2]int64{1, 2}
+	s2 := make([]int64, 2)
+	a8 := [8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}
+	s8 := make([]byte, 8)
+	a9 := [9]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09}
+	s9 := make([]byte, 9)
+
+	Copy(ValueOf(s1), ValueOf(a1))
+	if !slices.Equal(s1, a1[:]) {
+		t.Errorf("copied slice %x does not match input array %x", s1, a1[:])
+	}
+	Copy(ValueOf(s2), ValueOf(a2))
+	if !slices.Equal(s2, a2[:]) {
+		t.Errorf("copied slice %x does not match input array %x", s2, a2[:])
+	}
+	Copy(ValueOf(s8), ValueOf(a8))
+	if !bytes.Equal(s8, a8[:]) {
+		t.Errorf("copied slice %x does not match input array %x", s8, a8[:])
+	}
+	Copy(ValueOf(s9), ValueOf(a9))
+	if !bytes.Equal(s9, a9[:]) {
+		t.Errorf("copied slice %x does not match input array %x", s9, a9[:])
 	}
 }
 

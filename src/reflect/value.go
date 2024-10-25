@@ -1712,7 +1712,7 @@ func buflen(v Value) (unsafe.Pointer, uintptr) {
 		buf = hdr.data
 		len = hdr.len
 	case Array:
-		if v.isIndirect() {
+		if v.isIndirect() || v.typecode.Size() > unsafe.Sizeof(uintptr(0)) {
 			buf = v.value
 		} else {
 			buf = unsafe.Pointer(&v.value)
