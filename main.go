@@ -1641,10 +1641,17 @@ func main() {
 		Timeout:         *timeout,
 		WITPackage:      witPackage,
 		WITWorld:        witWorld,
-		ExtLDFlags:      extLDFlags,
 	}
 	if *printCommands {
 		options.PrintCommands = printCommand
+	}
+
+	if extLDFlags != "" {
+		options.ExtLDFlags, err = shlex.Split(extLDFlags)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "could not parse -extldflags:", err)
+			os.Exit(1)
+		}
 	}
 
 	err = options.Verify()
