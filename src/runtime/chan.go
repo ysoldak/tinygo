@@ -183,8 +183,7 @@ func (ch *channel) resumeRX(ok bool) unsafe.Pointer {
 		b.detach()
 	}
 
-	// push task onto runqueue
-	runqueue.Push(b.t)
+	scheduleTask(b.t)
 
 	return dst
 }
@@ -210,8 +209,7 @@ func (ch *channel) resumeTX() unsafe.Pointer {
 		b.detach()
 	}
 
-	// push task onto runqueue
-	runqueue.Push(b.t)
+	scheduleTask(b.t)
 
 	return src
 }

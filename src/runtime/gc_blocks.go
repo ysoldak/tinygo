@@ -464,12 +464,13 @@ func runGC() (freeBytes uintptr) {
 		// Therefore we need to scan the runqueue separately.
 		var markedTaskQueue task.Queue
 	runqueueScan:
+		runqueue := schedulerRunQueue()
 		for !runqueue.Empty() {
 			// Pop the next task off of the runqueue.
 			t := runqueue.Pop()
 
 			// Mark the task if it has not already been marked.
-			markRoot(uintptr(unsafe.Pointer(&runqueue)), uintptr(unsafe.Pointer(t)))
+			markRoot(uintptr(unsafe.Pointer(runqueue)), uintptr(unsafe.Pointer(t)))
 
 			// Push the task onto our temporary queue.
 			markedTaskQueue.Push(t)
@@ -484,7 +485,7 @@ func runGC() (freeBytes uintptr) {
 			interrupt.Restore(i)
 			goto runqueueScan
 		}
-		runqueue = markedTaskQueue
+		*runqueue = markedTaskQueue
 		interrupt.Restore(i)
 	} else {
 		finishMark()

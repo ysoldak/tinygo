@@ -10,7 +10,7 @@ type Mutex struct {
 	blocked task.Stack
 }
 
-//go:linkname scheduleTask runtime.runqueuePushBack
+//go:linkname scheduleTask runtime.scheduleTask
 func scheduleTask(*task.Task)
 
 func (m *Mutex) Lock() {

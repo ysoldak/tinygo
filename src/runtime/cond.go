@@ -34,7 +34,7 @@ func (c *Cond) Notify() bool {
 		default:
 			// Unblock the waiting task.
 			if atomic.CompareAndSwapPointer((*unsafe.Pointer)(unsafe.Pointer(&c.t)), unsafe.Pointer(t), nil) {
-				runqueuePushBack(t)
+				scheduleTask(t)
 				return true
 			}
 		}
