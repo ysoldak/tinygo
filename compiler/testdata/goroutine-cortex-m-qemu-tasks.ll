@@ -135,13 +135,13 @@ entry:
 declare i32 @runtime.sliceCopy(ptr nocapture writeonly, ptr nocapture readonly, i32, i32, i32, ptr) #2
 
 ; Function Attrs: nounwind
-define hidden void @main.closeBuiltinGoroutine(ptr dereferenceable_or_null(32) %ch, ptr %context) unnamed_addr #1 {
+define hidden void @main.closeBuiltinGoroutine(ptr dereferenceable_or_null(36) %ch, ptr %context) unnamed_addr #1 {
 entry:
   call void @runtime.chanClose(ptr %ch, ptr undef) #9
   ret void
 }
 
-declare void @runtime.chanClose(ptr dereferenceable_or_null(32), ptr) #2
+declare void @runtime.chanClose(ptr dereferenceable_or_null(36), ptr) #2
 
 ; Function Attrs: nounwind
 define hidden void @main.startInterfaceMethod(ptr %itf.typecode, ptr %itf.value, ptr %context) unnamed_addr #1 {
