@@ -769,9 +769,6 @@ func Run(pkgName string, options *compileopts.Options, cmdArgs []string) error {
 // passes command line arguments and environment variables in a way appropriate
 // for the given emulator.
 func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, cmdArgs, environmentVars []string, timeout time.Duration, run func(cmd *exec.Cmd, result builder.BuildResult) error) (builder.BuildResult, error) {
-
-	isSingleFile := strings.HasSuffix(pkgName, ".go")
-
 	// Determine whether we're on a system that supports environment variables
 	// and command line parameters (operating systems, WASI) or not (baremetal,
 	// WebAssembly in the browser). If we're on a system without an environment,
@@ -784,7 +781,7 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 			needsEnvInVars = true
 		}
 	}
-	var args, emuArgs, env []string
+	var args, env []string
 	var extraCmdEnv []string
 	if needsEnvInVars {
 		runtimeGlobals := make(map[string]string)
@@ -803,20 +800,6 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 			config.Options.GlobalValues = map[string]map[string]string{
 				"runtime": runtimeGlobals,
 			}
-		}
-	} else if config.EmulatorName() == "wasmtime" {
-		for _, v := range environmentVars {
-			emuArgs = append(emuArgs, "--env", v)
-		}
-
-		// Use of '--' argument no longer necessary as of Wasmtime v14:
-		// https://github.com/bytecodealliance/wasmtime/pull/6946
-		// args = append(args, "--")
-		args = append(args, cmdArgs...)
-
-		// Set this for nicer backtraces during tests, but don't override the user.
-		if _, ok := os.LookupEnv("WASMTIME_BACKTRACE_DETAILS"); !ok {
-			extraCmdEnv = append(extraCmdEnv, "WASMTIME_BACKTRACE_DETAILS=1")
 		}
 	} else {
 		// Pass environment variables and command line parameters as usual.
@@ -860,7 +843,7 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 			return result, err
 		}
 
-		name = emulator[0]
+		name, emulator = emulator[0], emulator[1:]
 
 		// wasmtime is a WebAssembly runtime CLI with WASI enabled by default.
 		// By default, only stdio is allowed. For example, while STDOUT routes
@@ -869,11 +852,24 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 		// outside the package directory. Other tests require temporary
 		// writeable directories. We allow this by adding wasmtime flags below.
 		if name == "wasmtime" {
+			var emuArgs []string
+
+			// Extract the wasmtime subcommand (e.g. "run" or "serve")
+			if len(emulator) > 1 {
+				emuArgs = append(emuArgs, emulator[0])
+				emulator = emulator[1:]
+			}
+
+			wd, _ := os.Getwd()
+
 			// Below adds additional wasmtime flags in case a test reads files
 			// outside its directory, like "../testdata/e.txt". This allows any
 			// relative directory up to the module root, even if the test never
 			// reads any files.
 			if config.TestConfig.CompileTestBinary {
+				// Set working directory to package dir
+				wd = result.MainDir
+
 				// Add relative dirs (../, ../..) up to module root (for wasip1)
 				dirs := dirsToModuleRootRel(result.MainDir, result.ModuleRoot)
 
@@ -883,19 +879,25 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 				for _, d := range dirs {
 					emuArgs = append(emuArgs, "--dir="+d)
 				}
+			} else {
+				emuArgs = append(emuArgs, "--dir=.")
 			}
 
-			dir := result.MainDir
-			if isSingleFile {
-				dir, _ = os.Getwd()
+			emuArgs = append(emuArgs, "--dir="+wd)
+			emuArgs = append(emuArgs, "--env=PWD="+wd)
+			for _, v := range environmentVars {
+				emuArgs = append(emuArgs, "--env", v)
 			}
-			emuArgs = append(emuArgs, "--dir=.")
-			emuArgs = append(emuArgs, "--dir="+dir)
-			emuArgs = append(emuArgs, "--env=PWD="+dir)
+
+			// Set this for nicer backtraces during tests, but don't override the user.
+			if _, ok := os.LookupEnv("WASMTIME_BACKTRACE_DETAILS"); !ok {
+				extraCmdEnv = append(extraCmdEnv, "WASMTIME_BACKTRACE_DETAILS=1")
+			}
+
+			emulator = append(emuArgs, emulator...)
 		}
 
-		emuArgs = append(emuArgs, emulator[1:]...)
-		args = append(emuArgs, args...)
+		args = append(emulator, args...)
 	}
 	var cmd *exec.Cmd
 	if ctx != nil {
@@ -925,7 +927,7 @@ func buildAndRun(pkgName string, config *compileopts.Config, stdout io.Writer, c
 
 	// Run binary.
 	if config.Options.PrintCommands != nil {
-		config.Options.PrintCommands(cmd.Path, cmd.Args...)
+		config.Options.PrintCommands(cmd.Path, cmd.Args[1:]...)
 	}
 	err = run(cmd, result)
 	if err != nil {
