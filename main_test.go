@@ -15,7 +15,6 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
-	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -521,12 +520,26 @@ func TestWebAssembly(t *testing.T) {
 						}
 					}
 				}
-				if !slices.Equal(imports, tc.imports) {
+				if !stringSlicesEqual(imports, tc.imports) {
 					t.Errorf("import list not as expected!\nexpected: %v\nactual:   %v", tc.imports, imports)
 				}
 			}
 		})
 	}
+}
+
+func stringSlicesEqual(s1, s2 []string) bool {
+	// We can use slices.Equal once we drop support for Go 1.20 (it was added in
+	// Go 1.21).
+	if len(s1) != len(s2) {
+		return false
+	}
+	for i, s := range s1 {
+		if s != s2[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestWasmExport(t *testing.T) {
