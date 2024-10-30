@@ -25,6 +25,7 @@ import (
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
+	"github.com/tetratelabs/wazero/sys"
 	"github.com/tinygo-org/tinygo/builder"
 	"github.com/tinygo-org/tinygo/compileopts"
 	"github.com/tinygo-org/tinygo/diagnostics"
@@ -686,7 +687,14 @@ func TestWasmExport(t *testing.T) {
 			if tc.command {
 				// Call _start (the entry point), which calls
 				// tester.callTestMain, which then runs all the tests.
-				mustCall(mod.ExportedFunction("_start").Call(ctx))
+				_, err := mod.ExportedFunction("_start").Call(ctx)
+				if err != nil {
+					if exitErr, ok := err.(*sys.ExitError); ok && exitErr.ExitCode() == 0 {
+						// Exited with code 0. Nothing to worry about.
+					} else {
+						t.Error("failed to run _start:", err)
+					}
+				}
 			} else {
 				// Run the _initialize call, because this is reactor mode wasm.
 				mustCall(mod.ExportedFunction("_initialize").Call(ctx))
@@ -772,12 +780,56 @@ func TestWasmExportJS(t *testing.T) {
 	}
 }
 
+// Test whether Go.run() (in wasm_exec.js) normally returns and returns the
+// right exit code.
+func TestWasmExit(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name   string
+		output string
+	}
+
+	tests := []testCase{
+		{name: "normal", output: "exit code: 0\n"},
+		{name: "exit-0", output: "exit code: 0\n"},
+		{name: "exit-0-sleep", output: "slept\nexit code: 0\n"},
+		{name: "exit-1", output: "exit code: 1\n"},
+		{name: "exit-1-sleep", output: "slept\nexit code: 1\n"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			options := optionsFromTarget("wasm", sema)
+			buildConfig, err := builder.NewConfig(&options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			buildConfig.Target.Emulator = "node testdata/wasmexit.js {}"
+			output := &bytes.Buffer{}
+			_, err = buildAndRun("testdata/wasmexit.go", buildConfig, output, []string{tc.name}, nil, time.Minute, func(cmd *exec.Cmd, result builder.BuildResult) error {
+				return cmd.Run()
+			})
+			if err != nil {
+				t.Error(err)
+			}
+			expected := "wasmexit test: " + tc.name + "\n" + tc.output
+			checkOutputData(t, []byte(expected), output.Bytes())
+		})
+	}
+}
+
 // Check whether the output of a test equals the expected output.
 func checkOutput(t *testing.T, filename string, actual []byte) {
 	expectedOutput, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal("could not read output file:", err)
 	}
+	checkOutputData(t, expectedOutput, actual)
+}
+
+func checkOutputData(t *testing.T, expectedOutput, actual []byte) {
 	expectedOutput = bytes.ReplaceAll(expectedOutput, []byte("\r\n"), []byte("\n"))
 	actual = bytes.ReplaceAll(actual, []byte("\r\n"), []byte("\n"))
 

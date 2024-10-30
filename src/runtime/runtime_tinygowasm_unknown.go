@@ -31,6 +31,10 @@ func abort() {
 
 //go:linkname syscall_Exit syscall.Exit
 func syscall_Exit(code int) {
+	// Because this is the "unknown" target we can't call an exit function.
+	// But we also can't just return since the program will likely expect this
+	// function to never return. So we panic instead.
+	runtimePanic("unsupported: syscall.Exit")
 }
 
 // There is not yet any support for any form of parallelism on WebAssembly, so these

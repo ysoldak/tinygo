@@ -19,7 +19,8 @@ func wasmEntryCommand() {
 	heapEnd = uintptr(wasm_memory_size(0) * wasmPageSize)
 	run()
 	if mainExited {
-		beforeExit()
+		// To make sure wasm_exec.js knows that we've exited, exit explicitly.
+		mainReturnExit()
 	}
 }
 

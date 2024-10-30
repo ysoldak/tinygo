@@ -80,10 +80,15 @@ func abort() {
 
 //go:linkname syscall_Exit syscall.Exit
 func syscall_Exit(code int) {
-	// TODO: should we call __stdio_exit here?
-	// It's a low-level exit (syscall.Exit) so doing any libc stuff seems
-	// unexpected, but then where else should stdio buffers be flushed?
+	// Flush stdio buffers.
+	__stdio_exit()
+
+	// Exit the program.
 	proc_exit(uint32(code))
+}
+
+func mainReturnExit() {
+	syscall_Exit(0)
 }
 
 // TinyGo does not yet support any form of parallelism on WebAssembly, so these
