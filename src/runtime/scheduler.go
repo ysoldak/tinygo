@@ -230,13 +230,15 @@ func scheduler(returnAtDeadlock bool) {
 					println("---   timer waiting:", tim, tim.whenTicks())
 				}
 			}
-			sleepTicks(timeLeft)
-			if asyncScheduler {
-				// The sleepTicks function above only sets a timeout at which
-				// point the scheduler will be called again. It does not really
-				// sleep. So instead of sleeping, we return and expect to be
-				// called again.
-				break
+			if timeLeft > 0 {
+				sleepTicks(timeLeft)
+				if asyncScheduler {
+					// The sleepTicks function above only sets a timeout at
+					// which point the scheduler will be called again. It does
+					// not really sleep. So instead of sleeping, we return and
+					// expect to be called again.
+					break
+				}
 			}
 			continue
 		}
