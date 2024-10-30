@@ -728,6 +728,7 @@ func TestWasmFuncOf(t *testing.T) {
 
 // Test //go:wasmexport in JavaScript (using NodeJS).
 func TestWasmExportJS(t *testing.T) {
+	t.Parallel()
 	type testCase struct {
 		name      string
 		buildMode string
@@ -738,7 +739,9 @@ func TestWasmExportJS(t *testing.T) {
 		{name: "c-shared", buildMode: "c-shared"},
 	}
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			// Build the wasm binary.
 			tmpdir := t.TempDir()
 			options := optionsFromTarget("wasm", sema)
