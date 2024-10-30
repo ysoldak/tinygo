@@ -23,7 +23,7 @@ func run() {
 	go func() {
 		initAll()
 		callMain()
-		schedulerDone = true
+		mainExited = true
 	}()
 	scheduler(false)
 }

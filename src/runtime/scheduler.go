@@ -21,7 +21,7 @@ const schedulerDebug = false
 // queue a new scheduler invocation using setTimeout.
 const asyncScheduler = GOOS == "js"
 
-var schedulerDone bool
+var mainExited bool
 
 // Queues used by the scheduler.
 var (
@@ -166,7 +166,7 @@ func removeTimer(tim *timer) bool {
 func scheduler(returnAtDeadlock bool) {
 	// Main scheduler loop.
 	var now timeUnit
-	for !schedulerDone {
+	for !mainExited {
 		scheduleLog("")
 		scheduleLog("  schedule")
 		if sleepQueue != nil || timerQueue != nil {
