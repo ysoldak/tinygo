@@ -19,6 +19,9 @@ func main() {
 
 	println("\n# panic replace")
 	panicReplace()
+
+	println("\n# defer panic")
+	deferPanic()
 }
 
 func recoverSimple() {
@@ -87,6 +90,18 @@ func panicReplace() {
 	}()
 	println("panic 1")
 	panic("panic 1")
+}
+
+func deferPanic() {
+	defer func() {
+		printitf("recovered from deferred call:", recover())
+	}()
+
+	// This recover should not do anything.
+	defer recover()
+
+	defer panic("deferred panic")
+	println("defer panic")
 }
 
 func printitf(msg string, itf interface{}) {

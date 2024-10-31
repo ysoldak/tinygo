@@ -1680,6 +1680,10 @@ func (b *builder) createBuiltin(argTypes []types.Type, argValues []llvm.Value, c
 			result = b.CreateSelect(cmp, result, arg, "")
 		}
 		return result, nil
+	case "panic":
+		// This is rare, but happens in "defer panic()".
+		b.createRuntimeInvoke("_panic", argValues, "")
+		return llvm.Value{}, nil
 	case "print", "println":
 		for i, value := range argValues {
 			if i >= 1 && callName == "println" {
