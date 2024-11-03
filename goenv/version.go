@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"runtime/debug"
 	"strings"
 )
 
@@ -11,20 +12,27 @@ import (
 // Update this value before release of new version of software.
 const version = "0.35.0-dev"
 
-var (
-	// This variable is set at build time using -ldflags parameters.
-	// See: https://stackoverflow.com/a/11355611
-	GitSha1 string
-)
-
 // Return TinyGo version, either in the form 0.30.0 or as a development version
 // (like 0.30.0-dev-abcd012).
 func Version() string {
 	v := version
-	if strings.HasSuffix(version, "-dev") && GitSha1 != "" {
-		v += "-" + GitSha1
+	if strings.HasSuffix(version, "-dev") {
+		if hash := readGitHash(); hash != "" {
+			v += "-" + hash
+		}
 	}
 	return v
+}
+
+func readGitHash() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value[:8]
+			}
+		}
+	}
+	return ""
 }
 
 // GetGorootVersion returns the major and minor version for a given GOROOT path.
