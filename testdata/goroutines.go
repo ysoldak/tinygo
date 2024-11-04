@@ -93,8 +93,8 @@ func acquire(m *sync.Mutex) {
 	m.Lock()
 	println("acquired mutex from goroutine")
 	time.Sleep(2 * time.Millisecond)
+	println("releasing mutex from goroutine")
 	m.Unlock()
-	println("released mutex from goroutine")
 }
 
 func sub() {
