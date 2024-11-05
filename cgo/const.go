@@ -54,8 +54,8 @@ func init() {
 }
 
 // parseConst parses the given string as a C constant.
-func parseConst(pos token.Pos, fset *token.FileSet, value string) (ast.Expr, *scanner.Error) {
-	t := newTokenizer(pos, fset, value)
+func parseConst(pos token.Pos, fset *token.FileSet, value string, f *cgoFile) (ast.Expr, *scanner.Error) {
+	t := newTokenizer(pos, fset, value, f)
 	expr, err := parseConstExpr(t, precedenceLowest)
 	t.Next()
 	if t.curToken != token.EOF {
@@ -96,6 +96,20 @@ func parseConstExpr(t *tokenizer, precedence int) (ast.Expr, *scanner.Error) {
 }
 
 func parseIdent(t *tokenizer) (ast.Expr, *scanner.Error) {
+	// Normally the name is something defined in the file (like another macro)
+	// which we get the declaration from using getASTDeclName.
+	// This ensures that names that are only referenced inside a macro are still
+	// getting defined.
+	if t.f != nil {
+		if cursor, ok := t.f.names[t.curValue]; ok {
+			return &ast.Ident{
+				NamePos: t.curPos,
+				Name:    t.f.getASTDeclName(t.curValue, cursor, false),
+			}, nil
+		}
+	}
+
+	// t.f is nil during testing. This is a fallback.
 	return &ast.Ident{
 		NamePos: t.curPos,
 		Name:    "C." + t.curValue,
@@ -164,6 +178,7 @@ func unexpectedToken(t *tokenizer, expected token.Token) *scanner.Error {
 
 // tokenizer reads C source code and converts it to Go tokens.
 type tokenizer struct {
+	f                   *cgoFile
 	curPos, peekPos     token.Pos
 	fset                *token.FileSet
 	curToken, peekToken token.Token
@@ -173,8 +188,9 @@ type tokenizer struct {
 
 // newTokenizer initializes a new tokenizer, positioned at the first token in
 // the string.
-func newTokenizer(start token.Pos, fset *token.FileSet, buf string) *tokenizer {
+func newTokenizer(start token.Pos, fset *token.FileSet, buf string, f *cgoFile) *tokenizer {
 	t := &tokenizer{
+		f:         f,
 		peekPos:   start,
 		fset:      fset,
 		buf:       buf,

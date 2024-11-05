@@ -1148,7 +1148,7 @@ func (f *cgoFile) getASTDeclName(name string, found clangCursor, iscall bool) st
 	if alias := cgoAliases["C."+name]; alias != "" {
 		return alias
 	}
-	node := f.getASTDeclNode(name, found, iscall)
+	node := f.getASTDeclNode(name, found)
 	if node, ok := node.(*ast.FuncDecl); ok {
 		if !iscall {
 			return node.Name.Name + "$funcaddr"
@@ -1160,7 +1160,7 @@ func (f *cgoFile) getASTDeclName(name string, found clangCursor, iscall bool) st
 
 // getASTDeclNode will declare the given C AST node (if not already defined) and
 // returns it.
-func (f *cgoFile) getASTDeclNode(name string, found clangCursor, iscall bool) ast.Node {
+func (f *cgoFile) getASTDeclNode(name string, found clangCursor) ast.Node {
 	if node, ok := f.defined[name]; ok {
 		// Declaration was found in the current file, so return it immediately.
 		return node

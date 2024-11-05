@@ -408,7 +408,7 @@ func (f *cgoFile) createASTNode(name string, c clangCursor) (ast.Node, any) {
 		if pos != token.NoPos {
 			tokenPos = pos + token.Pos(len(name))
 		}
-		expr, scannerError := parseConst(tokenPos, f.fset, value)
+		expr, scannerError := parseConst(tokenPos, f.fset, value, f)
 		if scannerError != nil {
 			f.errors = append(f.errors, *scannerError)
 			return nil, nil

@@ -47,3 +47,5 @@ type (
 
 const C.foo = 3
 const C.bar = C.foo
+const C.unreferenced = 4
+const C.referenced = C.unreferenced
