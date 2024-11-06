@@ -7,6 +7,8 @@
 //     testdata/errors.go:16:33: unexpected token ), expected end of expression
 //     testdata/errors.go:17:34: unexpected token ), expected end of expression
 //     -: unexpected token INT, expected end of expression
+//     testdata/errors.go:30:35: unexpected number of parameters: expected 2, got 3
+//     testdata/errors.go:31:31: unexpected number of parameters: expected 2, got 1
 
 // Type checking errors after CGo processing:
 //     testdata/errors.go:102: cannot use 2 << 10 (untyped int constant 2048) as C.char value in variable declaration (overflows)
@@ -17,6 +19,8 @@
 //     testdata/errors.go:114: undefined: C.SOME_CONST_b
 //     testdata/errors.go:116: undefined: C.SOME_CONST_startspace
 //     testdata/errors.go:119: undefined: C.SOME_PARAM_CONST_invalid
+//     testdata/errors.go:122: undefined: C.add_toomuch
+//     testdata/errors.go:123: undefined: C.add_toolittle
 
 package main
 

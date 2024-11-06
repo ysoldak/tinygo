@@ -26,6 +26,11 @@ import "C"
 // #warning another warning
 import "C"
 
+// #define add(a, b) (a+b)
+// #define add_toomuch add(1, 2, 3)
+// #define add_toolittle add(1)
+import "C"
+
 // Make sure that errors for the following lines won't change with future
 // additions to the CGo preamble.
 //
@@ -51,4 +56,7 @@ var (
 	// constants passed by a command line parameter
 	_ = C.SOME_PARAM_CONST_invalid
 	_ = C.SOME_PARAM_CONST_valid
+
+	_ = C.add_toomuch
+	_ = C.add_toolittle
 )

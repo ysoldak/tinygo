@@ -49,3 +49,6 @@ const C.foo = 3
 const C.bar = C.foo
 const C.unreferenced = 4
 const C.referenced = C.unreferenced
+const C.fnlike_val = 5
+const C.square_val = (20 * 20)
+const C.add_val = (3 + 5)

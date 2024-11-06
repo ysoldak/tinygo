@@ -63,6 +63,7 @@ long long tinygo_clang_getEnumConstantDeclValue(GoCXCursor c);
 CXType tinygo_clang_getEnumDeclIntegerType(GoCXCursor c);
 unsigned tinygo_clang_Cursor_isAnonymous(GoCXCursor c);
 unsigned tinygo_clang_Cursor_isBitField(GoCXCursor c);
+unsigned tinygo_clang_Cursor_isMacroFunctionLike(GoCXCursor c);
 
 int tinygo_clang_globals_visitor(GoCXCursor c, GoCXCursor parent, CXClientData client_data);
 int tinygo_clang_struct_visitor(GoCXCursor c, GoCXCursor parent, CXClientData client_data);
@@ -370,45 +371,8 @@ func (f *cgoFile) createASTNode(name string, c clangCursor) (ast.Node, any) {
 		gen.Specs = append(gen.Specs, valueSpec)
 		return gen, nil
 	case C.CXCursor_MacroDefinition:
-		// Extract tokens from the Clang tokenizer.
-		// See: https://stackoverflow.com/a/19074846/559350
-		sourceRange := C.tinygo_clang_getCursorExtent(c)
-		tu := C.tinygo_clang_Cursor_getTranslationUnit(c)
-		var rawTokens *C.CXToken
-		var numTokens C.unsigned
-		C.clang_tokenize(tu, sourceRange, &rawTokens, &numTokens)
-		tokens := unsafe.Slice(rawTokens, numTokens)
-		// Convert this range of tokens back to source text.
-		// Ugly, but it works well enough.
-		sourceBuf := &bytes.Buffer{}
-		var startOffset int
-		for i, token := range tokens {
-			spelling := getString(C.clang_getTokenSpelling(tu, token))
-			location := C.clang_getTokenLocation(tu, token)
-			var tokenOffset C.unsigned
-			C.clang_getExpansionLocation(location, nil, nil, nil, &tokenOffset)
-			if i == 0 {
-				// The first token is the macro name itself.
-				// Skip it (after using its location).
-				startOffset = int(tokenOffset) + len(name)
-			} else {
-				// Later tokens are the macro contents.
-				for int(tokenOffset) > (startOffset + sourceBuf.Len()) {
-					// Pad the source text with whitespace (that must have been
-					// present in the original source as well).
-					sourceBuf.WriteByte(' ')
-				}
-				sourceBuf.WriteString(spelling)
-			}
-		}
-		C.clang_disposeTokens(tu, rawTokens, numTokens)
-		value := sourceBuf.String()
-		// Try to convert this #define into a Go constant expression.
-		tokenPos := token.NoPos
-		if pos != token.NoPos {
-			tokenPos = pos + token.Pos(len(name))
-		}
-		expr, scannerError := parseConst(tokenPos, f.fset, value, f)
+		tokenPos, value := f.getMacro(c)
+		expr, scannerError := parseConst(tokenPos, f.fset, value, nil, token.NoPos, f)
 		if scannerError != nil {
 			f.errors = append(f.errors, *scannerError)
 			return nil, nil
@@ -486,6 +450,62 @@ func (f *cgoFile) createASTNode(name string, c clangCursor) (ast.Node, any) {
 		f.addError(pos, fmt.Sprintf("internal error: unknown cursor type: %d", kind))
 		return nil, nil
 	}
+}
+
+// Return whether this is a macro that's also function-like, like this:
+//
+//	#define add(a, b) (a+b)
+func (f *cgoFile) isFunctionLikeMacro(c clangCursor) bool {
+	if C.tinygo_clang_getCursorKind(c) != C.CXCursor_MacroDefinition {
+		return false
+	}
+	return C.tinygo_clang_Cursor_isMacroFunctionLike(c) != 0
+}
+
+// Get the macro value: the position in the source file and the string value of
+// the macro.
+func (f *cgoFile) getMacro(c clangCursor) (pos token.Pos, value string) {
+	// Extract tokens from the Clang tokenizer.
+	// See: https://stackoverflow.com/a/19074846/559350
+	sourceRange := C.tinygo_clang_getCursorExtent(c)
+	tu := C.tinygo_clang_Cursor_getTranslationUnit(c)
+	var rawTokens *C.CXToken
+	var numTokens C.unsigned
+	C.clang_tokenize(tu, sourceRange, &rawTokens, &numTokens)
+	tokens := unsafe.Slice(rawTokens, numTokens)
+	defer C.clang_disposeTokens(tu, rawTokens, numTokens)
+
+	// Convert this range of tokens back to source text.
+	// Ugly, but it works well enough.
+	sourceBuf := &bytes.Buffer{}
+	var startOffset int
+	for i, token := range tokens {
+		spelling := getString(C.clang_getTokenSpelling(tu, token))
+		location := C.clang_getTokenLocation(tu, token)
+		var tokenOffset C.unsigned
+		C.clang_getExpansionLocation(location, nil, nil, nil, &tokenOffset)
+		if i == 0 {
+			// The first token is the macro name itself.
+			// Skip it (after using its location).
+			startOffset = int(tokenOffset)
+		} else {
+			// Later tokens are the macro contents.
+			for int(tokenOffset) > (startOffset + sourceBuf.Len()) {
+				// Pad the source text with whitespace (that must have been
+				// present in the original source as well).
+				sourceBuf.WriteByte(' ')
+			}
+			sourceBuf.WriteString(spelling)
+		}
+	}
+	value = sourceBuf.String()
+
+	// Obtain the position of this token. This is the position of the first
+	// character in the 'value' string and is used to report errors at the
+	// correct location in the source file.
+	pos = f.getCursorPosition(c)
+
+	return
 }
 
 func getString(clangString C.CXString) (s string) {
