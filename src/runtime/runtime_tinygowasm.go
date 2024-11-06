@@ -112,3 +112,8 @@ func hardwareRand() (n uint64, ok bool) {
 //
 //export arc4random
 func libc_arc4random() uint32
+
+// int *__errno_location(void);
+//
+//export __errno_location
+func libc_errno_location() *int32
