@@ -941,6 +941,7 @@ endif
 	@cp -rp lib/musl/src/thread          build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/time            build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/unistd          build/release/tinygo/lib/musl/src
+	@cp -rp lib/musl/src/process         build/release/tinygo/lib/musl/src
 	@cp -rp lib/mingw-w64/mingw-w64-crt/def-include                 build/release/tinygo/lib/mingw-w64/mingw-w64-crt
 	@cp -rp lib/mingw-w64/mingw-w64-crt/lib-common/api-ms-win-crt-* build/release/tinygo/lib/mingw-w64/mingw-w64-crt/lib-common
 	@cp -rp lib/mingw-w64/mingw-w64-crt/lib-common/kernel32.def.in  build/release/tinygo/lib/mingw-w64/mingw-w64-crt/lib-common
