@@ -128,6 +128,7 @@ var libMusl = Library{
 			"malloc/mallocng/*.c",
 			"mman/*.c",
 			"math/*.c",
+			"misc/*.c",
 			"multibyte/*.c",
 			"signal/" + arch + "/*.s",
 			"signal/*.c",

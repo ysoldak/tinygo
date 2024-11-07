@@ -3,6 +3,8 @@
 package runtime
 
 import (
+	"internal/futex"
+	"internal/task"
 	"math/bits"
 	"sync/atomic"
 	"tinygo"
@@ -223,46 +225,30 @@ func nanosecondsToTicks(ns int64) timeUnit {
 }
 
 func sleepTicks(d timeUnit) {
-	// When there are no signal handlers present, we can simply go to sleep.
-	if !hasSignals {
-		// timeUnit is in nanoseconds, so need to convert to microseconds here.
-		usleep(uint(d) / 1000)
-		return
-	}
+	until := ticks() + d
 
-	if GOOS == "darwin" {
-		// Check for incoming signals.
-		if checkSignals() {
-			// Received a signal, so there's probably at least one goroutine
-			// that's runnable again.
+	for {
+		// Sleep for the given amount of time.
+		// If a signal arrived before going to sleep, or during the sleep, the
+		// sleep will exit early.
+		signalFutex.WaitUntil(0, uint64(ticksToNanoseconds(d)))
+
+		// Check whether there was a signal before or during the call to
+		// WaitUntil.
+		if signalFutex.Swap(0) != 0 {
+			if checkSignals() && hasScheduler {
+				// We got a signal, so return to the scheduler.
+				// (If there is no scheduler, there is no other goroutine that
+				// might need to run now).
+				return
+			}
+		}
+
+		// Set duration (in next loop iteration) to the remaining time.
+		d = until - ticks()
+		if d <= 0 {
 			return
 		}
-
-		// WARNING: there is a race condition here. If a signal arrives between
-		// checkSignals() and usleep(), the usleep() call will not exit early so
-		// the signal is delayed until usleep finishes or another signal
-		// arrives.
-		// There doesn't appear to be a simple way to fix this on MacOS.
-
-		// timeUnit is in nanoseconds, so need to convert to microseconds here.
-		result := usleep(uint(d) / 1000)
-		if result != 0 {
-			checkSignals()
-		}
-	} else {
-		// Linux (and various other POSIX systems) implement sigtimedwait so we
-		// can do this in a non-racy way.
-		tinygo_wfi_mask(activeSignals)
-		if checkSignals() {
-			tinygo_wfi_unmask()
-			return
-		}
-		signal := tinygo_wfi_sleep(activeSignals, uint64(d))
-		if signal >= 0 {
-			tinygo_signal_handler(signal)
-			checkSignals()
-		}
-		tinygo_wfi_unmask()
 	}
 }
 
@@ -353,21 +339,21 @@ func growHeap() bool {
 	return true
 }
 
-func init() {
-	// Set up a channel to receive signals into.
-	signalChan = make(chan uint32, 1)
-}
-
-var signalChan chan uint32
-
 // Indicate whether signals have been registered.
 var hasSignals bool
 
+// Futex for the signal handler.
+// The value is 0 when there are no new signals, or 1 when there are unhandled
+// signals and the main thread doesn't know about it yet.
+// When a signal arrives, the futex value is changed to 1 and if it was 0
+// before, all waiters are awoken.
+// When a wait exits, the value is changed to 0 and if it wasn't 0 before, the
+// signals are checked.
+var signalFutex futex.Futex
+
 // Mask of signals that have been received. The signal handler atomically ORs
 // signals into this value.
-var receivedSignals uint32
-
-var activeSignals uint32
+var receivedSignals atomic.Uint32
 
 //go:linkname signal_enable os/signal.signal_enable
 func signal_enable(s uint32) {
@@ -377,7 +363,6 @@ func signal_enable(s uint32) {
 		runtimePanicAt(returnAddress(0), "unsupported signal number")
 	}
 	hasSignals = true
-	activeSignals |= 1 << s
 	// It's easier to implement this function in C.
 	tinygo_signal_enable(s)
 }
@@ -389,7 +374,6 @@ func signal_ignore(s uint32) {
 		// receivedSignals into a uint32 array.
 		runtimePanicAt(returnAddress(0), "unsupported signal number")
 	}
-	activeSignals &^= 1 << s
 	tinygo_signal_ignore(s)
 }
 
@@ -400,20 +384,13 @@ func signal_disable(s uint32) {
 		// receivedSignals into a uint32 array.
 		runtimePanicAt(returnAddress(0), "unsupported signal number")
 	}
-	activeSignals &^= 1 << s
 	tinygo_signal_disable(s)
 }
 
 //go:linkname signal_waitUntilIdle os/signal.signalWaitUntilIdle
 func signal_waitUntilIdle() {
-	// Make sure all signals are sent on the channel.
-	for atomic.LoadUint32(&receivedSignals) != 0 {
-		checkSignals()
-		Gosched()
-	}
-
-	// Make sure all signals are processed.
-	for len(signalChan) != 0 {
+	// Wait until signal_recv has processed all signals.
+	for receivedSignals.Load() != 0 {
 		Gosched()
 	}
 }
@@ -431,102 +408,93 @@ func tinygo_signal_disable(s uint32)
 //
 //export tinygo_signal_handler
 func tinygo_signal_handler(s int32) {
-	// This loop is essentially the atomic equivalent of the following:
+	// The following loop is equivalent to the following:
 	//
-	//   receivedSignals |= 1 << s
+	//     receivedSignals.Or(uint32(1) << uint32(s))
 	//
-	// TODO: use atomic.Uint32.And once we drop support for Go 1.22 instead of
-	// this loop.
+	// TODO: use this instead of a loop once we drop support for Go 1.22.
 	for {
 		mask := uint32(1) << uint32(s)
-		val := atomic.LoadUint32(&receivedSignals)
-		swapped := atomic.CompareAndSwapUint32(&receivedSignals, val, val|mask)
+		val := receivedSignals.Load()
+		swapped := receivedSignals.CompareAndSwap(val, val|mask)
 		if swapped {
 			break
 		}
 	}
+
+	// Notify the main thread that there was a signal.
+	// This will exit the call to Wait or WaitUntil early.
+	if signalFutex.Swap(1) == 0 {
+		// Changed from 0 to 1, so there may have been a waiting goroutine.
+		// This could be optimized to avoid a syscall when there are no waiting
+		// goroutines.
+		signalFutex.WakeAll()
+	}
 }
+
+// Task waiting for a signal to arrive, or nil if it is running or there are no
+// signals.
+var signalRecvWaiter *task.Task
 
 //go:linkname signal_recv os/signal.signal_recv
 func signal_recv() uint32 {
 	// Function called from os/signal to get the next received signal.
-	val := <-signalChan
-	checkSignals()
-	return val
-}
-
-// Atomically find a signal that previously occured and send it into the
-// signalChan channel. Return true if at least one signal was delivered this
-// way, false otherwise.
-func checkSignals() bool {
-	gotSignals := false
 	for {
-		// Extract the lowest numbered signal number from receivedSignals.
-		val := atomic.LoadUint32(&receivedSignals)
+		val := receivedSignals.Load()
 		if val == 0 {
-			// There is no signal ready to be received by the program (common
-			// case).
-			return gotSignals
+			// There are no signals to receive. Sleep until there are.
+			signalRecvWaiter = task.Current()
+			task.Pause()
+			continue
 		}
+
+		// Extract the lowest numbered signal number from receivedSignals.
 		num := uint32(bits.TrailingZeros32(val))
 
-		// Do a non-blocking send on signalChan.
-		select {
-		case signalChan <- num:
-			// There was room free in the channel, so remove the signal number
-			// from the receivedSignals mask.
-			gotSignals = true
-		default:
-			// Could not send the signal number on the channel. This means
-			// there's still a signal pending. In that case, let it be received
-			// at which point checkSignals is called again to put the next one
-			// in the channel buffer.
-			return gotSignals
-		}
-
 		// Atomically clear the signal number from receivedSignals.
-		// TODO: use atomic.Uint32.Or once we drop support for Go 1.22 instead
-		// of this loop.
+		// TODO: use atomic.Uint32.And once we drop support for Go 1.22 instead
+		// of this loop, like so:
+		//
+		//   receivedSignals.And(^(uint32(1) << num))
+		//
 		for {
 			newVal := val &^ (1 << num)
-			swapped := atomic.CompareAndSwapUint32(&receivedSignals, val, newVal)
+			swapped := receivedSignals.CompareAndSwap(val, newVal)
 			if swapped {
 				break
 			}
-			val = atomic.LoadUint32(&receivedSignals)
+			val = receivedSignals.Load()
 		}
+
+		return num
 	}
 }
 
-//export tinygo_wfi_mask
-func tinygo_wfi_mask(active uint32)
-
-//export tinygo_wfi_sleep
-func tinygo_wfi_sleep(active uint32, timeout uint64) int32
-
-//export tinygo_wfi_wait
-func tinygo_wfi_wait(active uint32) int32
-
-//export tinygo_wfi_unmask
-func tinygo_wfi_unmask()
+// Reactivate the goroutine waiting for signals, if there are any.
+// Return true if it was reactivated (and therefore the scheduler should run
+// again), and false otherwise.
+func checkSignals() bool {
+	if receivedSignals.Load() != 0 && signalRecvWaiter != nil {
+		runqueuePushBack(signalRecvWaiter)
+		signalRecvWaiter = nil
+		return true
+	}
+	return false
+}
 
 func waitForEvents() {
 	if hasSignals {
-		// We could have used pause() here, but that function is impossible to
-		// use in a race-free way:
-		// https://www.cipht.net/2023/11/30/perils-of-pause.html
-		// Therefore we need something better.
-		// Note: this is unsafe with multithreading, because sigprocmask is only
-		// defined for single-threaded applictions.
-		tinygo_wfi_mask(activeSignals)
-		if checkSignals() {
-			tinygo_wfi_unmask()
-			return
+		// Wait as long as the futex value is 0.
+		// This can happen either before or during the call to Wait.
+		// This can be optimized: if the value is nonzero we don't need to do a
+		// futex wait syscall and can instead immediately call checkSignals.
+		signalFutex.Wait(0)
+
+		// Check for signals that arrived before or during the call to Wait.
+		// If there are any signals, the value is 0.
+		if signalFutex.Swap(0) != 0 {
+			checkSignals()
 		}
-		signal := tinygo_wfi_wait(activeSignals)
-		tinygo_signal_handler(signal)
-		checkSignals()
-		tinygo_wfi_unmask()
 	} else {
 		// The program doesn't use signals, so this is a deadlock.
 		runtimePanic("deadlocked: no event source")

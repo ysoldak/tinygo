@@ -390,6 +390,7 @@ func defaultTarget(options *Options) (*TargetSpec, error) {
 			"-platform_version", "macos", platformVersion, platformVersion,
 		)
 		spec.ExtraFiles = append(spec.ExtraFiles,
+			"src/internal/futex/futex_darwin.c",
 			"src/runtime/os_darwin.c",
 			"src/runtime/runtime_unix.c",
 			"src/runtime/signal.c")
@@ -413,6 +414,7 @@ func defaultTarget(options *Options) (*TargetSpec, error) {
 			spec.CFlags = append(spec.CFlags, "-mno-outline-atomics")
 		}
 		spec.ExtraFiles = append(spec.ExtraFiles,
+			"src/internal/futex/futex_linux.c",
 			"src/runtime/runtime_unix.c",
 			"src/runtime/signal.c")
 	case "windows":
