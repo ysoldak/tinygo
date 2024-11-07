@@ -15,6 +15,7 @@ void tinygo_signal_handler(int sig);
 void tinygo_signal_enable(uint32_t sig) {
     struct sigaction act = { 0 };
     act.sa_handler = &tinygo_signal_handler;
+    act.sa_flags = SA_RESTART;
     sigaction(sig, &act, NULL);
 }
 
