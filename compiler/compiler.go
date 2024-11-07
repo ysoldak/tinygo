@@ -1686,6 +1686,7 @@ func (b *builder) createBuiltin(argTypes []types.Type, argValues []llvm.Value, c
 		b.createRuntimeInvoke("_panic", argValues, "")
 		return llvm.Value{}, nil
 	case "print", "println":
+		b.createRuntimeCall("printlock", nil, "")
 		for i, value := range argValues {
 			if i >= 1 && callName == "println" {
 				b.createRuntimeCall("printspace", nil, "")
@@ -1746,6 +1747,7 @@ func (b *builder) createBuiltin(argTypes []types.Type, argValues []llvm.Value, c
 		if callName == "println" {
 			b.createRuntimeCall("printnl", nil, "")
 		}
+		b.createRuntimeCall("printunlock", nil, "")
 		return llvm.Value{}, nil // print() or println() returns void
 	case "real":
 		cplx := argValues[0]
