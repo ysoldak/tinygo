@@ -531,7 +531,10 @@
 
 		const go = new Go();
 		WebAssembly.instantiate(fs.readFileSync(process.argv[2]), go.importObject).then((result) => {
-			return go.run(result.instance);
+			go.run(result.instance).then((result) => {
+                            process.exit(result);
+                        }).
+                        catch((e) => { throw e });
 		}).catch((err) => {
 			console.error(err);
 			process.exit(1);
