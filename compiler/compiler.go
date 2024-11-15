@@ -17,6 +17,7 @@ import (
 
 	"github.com/tinygo-org/tinygo/compiler/llvmutil"
 	"github.com/tinygo-org/tinygo/loader"
+	"github.com/tinygo-org/tinygo/src/tinygo"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/types/typeutil"
 	"tinygo.org/x/go-llvm"
@@ -1869,10 +1870,9 @@ func (b *builder) createFunctionCall(instr *ssa.CallCommon) (llvm.Value, error) 
 			}
 			return llvm.ConstInt(b.ctx.Int1Type(), supportsRecover, false), nil
 		case name == "runtime.panicStrategy":
-			// These constants are defined in src/runtime/panic.go.
 			panicStrategy := map[string]uint64{
-				"print": 1, // panicStrategyPrint
-				"trap":  2, // panicStrategyTrap
+				"print": tinygo.PanicStrategyPrint,
+				"trap":  tinygo.PanicStrategyTrap,
 			}[b.Config.PanicStrategy]
 			return llvm.ConstInt(b.ctx.Int8Type(), panicStrategy, false), nil
 		case name == "runtime/interrupt.New":

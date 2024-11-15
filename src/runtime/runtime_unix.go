@@ -5,6 +5,7 @@ package runtime
 import (
 	"math/bits"
 	"sync/atomic"
+	"tinygo"
 	"unsafe"
 )
 
@@ -141,7 +142,7 @@ func tinygo_register_fatal_signals()
 //
 //export tinygo_handle_fatal_signal
 func tinygo_handle_fatal_signal(sig int32, addr uintptr) {
-	if panicStrategy() == panicStrategyTrap {
+	if panicStrategy() == tinygo.PanicStrategyTrap {
 		trap()
 	}
 

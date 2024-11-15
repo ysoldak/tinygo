@@ -3,6 +3,7 @@ package runtime
 import (
 	"internal/task"
 	"runtime/interrupt"
+	"tinygo"
 	"unsafe"
 )
 
@@ -21,11 +22,6 @@ func tinygo_longjmp(frame *deferFrame)
 // Compiler intrinsic.
 // Returns whether recover is supported on the current architecture.
 func supportsRecover() bool
-
-const (
-	panicStrategyPrint = 1
-	panicStrategyTrap  = 2
-)
 
 // Compile intrinsic.
 // Returns which strategy is used. This is usually "print" but can be changed
@@ -48,7 +44,7 @@ type deferFrame struct {
 
 // Builtin function panic(msg), used as a compiler intrinsic.
 func _panic(message interface{}) {
-	if panicStrategy() == panicStrategyTrap {
+	if panicStrategy() == tinygo.PanicStrategyTrap {
 		trap()
 	}
 	// Note: recover is not supported inside interrupts.
@@ -76,7 +72,7 @@ func runtimePanic(msg string) {
 }
 
 func runtimePanicAt(addr unsafe.Pointer, msg string) {
-	if panicStrategy() == panicStrategyTrap {
+	if panicStrategy() == tinygo.PanicStrategyTrap {
 		trap()
 	}
 	if hasReturnAddr {
