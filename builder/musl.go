@@ -116,6 +116,7 @@ var libMusl = Library{
 			"env/*.c",
 			"errno/*.c",
 			"exit/*.c",
+			"fcntl/*.c",
 			"internal/defsysinfo.c",
 			"internal/libc.c",
 			"internal/syscall_ret.c",

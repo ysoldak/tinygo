@@ -926,6 +926,7 @@ endif
 	@cp -rp lib/musl/src/env             build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/errno           build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/exit            build/release/tinygo/lib/musl/src
+	@cp -rp lib/musl/src/fcntl           build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/include         build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/internal        build/release/tinygo/lib/musl/src
 	@cp -rp lib/musl/src/legacy          build/release/tinygo/lib/musl/src
