@@ -1227,58 +1227,6 @@ func p2fileTypeToStatType(t types.DescriptorType) uint32 {
 	return 0
 }
 
-var libc_envs map[string]string
-
-func populateEnvironment() {
-	libc_envs = make(map[string]string)
-	for _, kv := range environment.GetEnvironment().Slice() {
-		libc_envs[kv[0]] = kv[1]
-	}
-}
-
-// char * getenv(const char *name);
-//
-//export getenv
-func getenv(key *byte) *byte {
-	k := goString(key)
-
-	v, ok := libc_envs[k]
-	if !ok {
-		return nil
-	}
-
-	// The new allocation is zero-filled; allocating an extra byte and then
-	// copying the data over will leave the last byte untouched,
-	// null-terminating the string.
-	vbytes := make([]byte, len(v)+1)
-	copy(vbytes, v)
-	return unsafe.SliceData(vbytes)
-}
-
-// int setenv(const char *name, const char *value, int overwrite);
-//
-//export setenv
-func setenv(key, value *byte, overwrite int) int {
-	k := goString(key)
-	if _, ok := libc_envs[k]; ok && overwrite == 0 {
-		return 0
-	}
-
-	v := goString(value)
-	libc_envs[k] = v
-
-	return 0
-}
-
-// int unsetenv(const char *name);
-//
-//export unsetenv
-func unsetenv(key *byte) int {
-	k := goString(key)
-	delete(libc_envs, k)
-	return 0
-}
-
 // void arc4random_buf (void *, size_t);
 //
 //export arc4random_buf
