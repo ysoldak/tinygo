@@ -11,7 +11,7 @@ import (
 )
 
 // Ever-incrementing pointer: no memory is freed.
-var heapptr = heapStart
+var heapptr uintptr
 
 // Total amount allocated for runtime.MemStats
 var gcTotalAlloc uint64
@@ -93,7 +93,8 @@ func SetFinalizer(obj interface{}, finalizer interface{}) {
 }
 
 func initHeap() {
-	// preinit() may have moved heapStart; reset heapptr
+	// Initialize this bump-pointer allocator to the start of the heap.
+	// Needed here because heapStart may not be a compile-time constant.
 	heapptr = heapStart
 }
 
