@@ -100,6 +100,13 @@ jobs:
       - name: Build wasi-libc
         if: steps.cache-wasi-libc.outputs.cache-hit != 'true'
         run: make wasi-libc
+      - name: Cache Go cache
+        uses: actions/cache@v4
+        with:
+          key: go-cache-windows-v1-${{ hashFiles('go.mod') }}
+          path: |
+            C:/Users/runneradmin/AppData/Local/go-build
+            C:/Users/runneradmin/go/pkg/mod
       - name: Install wasmtime
         run: |
           scoop install wasmtime@14.0.4
