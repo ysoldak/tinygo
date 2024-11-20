@@ -61,6 +61,10 @@ type BuildResult struct {
 	// correctly printing test results: the import path isn't always the same as
 	// the path listed on the command line.
 	ImportPath string
+
+	// Map from path to package name. It is needed to attribute binary size to
+	// the right Go package.
+	PackagePathMap map[string]string
 }
 
 // packageAction is the struct that is serialized to JSON and hashed, to work as
@@ -240,6 +244,12 @@ func Build(pkgName, outpath, tmpdir string, config *compileopts.Config) (BuildRe
 	err = lprogram.Parse()
 	if err != nil {
 		return result, err
+	}
+
+	// Store which filesystem paths map to which package name.
+	result.PackagePathMap = make(map[string]string, len(lprogram.Packages))
+	for _, pkg := range lprogram.Sorted() {
+		result.PackagePathMap[pkg.OriginalDir()] = pkg.Pkg.Path()
 	}
 
 	// Create the *ssa.Program. This does not yet build the entire SSA of the
@@ -916,11 +926,7 @@ func Build(pkgName, outpath, tmpdir string, config *compileopts.Config) (BuildRe
 
 			// Print code size if requested.
 			if config.Options.PrintSizes == "short" || config.Options.PrintSizes == "full" {
-				packagePathMap := make(map[string]string, len(lprogram.Packages))
-				for _, pkg := range lprogram.Sorted() {
-					packagePathMap[pkg.OriginalDir()] = pkg.Pkg.Path()
-				}
-				sizes, err := loadProgramSize(result.Executable, packagePathMap)
+				sizes, err := loadProgramSize(result.Executable, result.PackagePathMap)
 				if err != nil {
 					return err
 				}
