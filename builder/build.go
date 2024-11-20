@@ -690,7 +690,7 @@ func Build(pkgName, outpath, tmpdir string, config *compileopts.Config) (BuildRe
 	for _, pkg := range lprogram.Sorted() {
 		pkg := pkg
 		for _, filename := range pkg.CFiles {
-			abspath := filepath.Join(pkg.Dir, filename)
+			abspath := filepath.Join(pkg.OriginalDir(), filename)
 			job := &compileJob{
 				description: "compile CGo file " + abspath,
 				run: func(job *compileJob) error {
