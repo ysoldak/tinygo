@@ -345,7 +345,7 @@ func (c *compilerContext) parsePragmas(info *functionInfo, f *ssa.Function) {
 				continue
 			}
 			if len(parts) != 2 {
-				c.addError(f.Pos(), fmt.Sprintf("expected one parameter to //go:wasmimport, not %d", len(parts)-1))
+				c.addError(f.Pos(), fmt.Sprintf("expected one parameter to //go:wasmexport, not %d", len(parts)-1))
 				continue
 			}
 			name := parts[1]
