@@ -475,7 +475,7 @@ func signal_recv() uint32 {
 // again), and false otherwise.
 func checkSignals() bool {
 	if receivedSignals.Load() != 0 && signalRecvWaiter != nil {
-		runqueuePushBack(signalRecvWaiter)
+		scheduleTask(signalRecvWaiter)
 		signalRecvWaiter = nil
 		return true
 	}
