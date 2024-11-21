@@ -28,11 +28,6 @@ func scheduleLogChan(msg string, ch *channel, t *task.Task) {
 }
 
 // Goexit terminates the currently running goroutine. No other goroutines are affected.
-//
-// Unlike the main Go implementation, no deferred calls will be run.
-//
-//go:inline
 func Goexit() {
-	// TODO: run deferred functions
-	deadlock()
+	panicOrGoexit(nil, panicGoexit)
 }

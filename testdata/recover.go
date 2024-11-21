@@ -1,5 +1,10 @@
 package main
 
+import (
+	"runtime"
+	"time"
+)
+
 func main() {
 	println("# simple recover")
 	recoverSimple()
@@ -22,6 +27,9 @@ func main() {
 
 	println("\n# defer panic")
 	deferPanic()
+
+	println("\n# runtime.Goexit")
+	runtimeGoexit()
 }
 
 func recoverSimple() {
@@ -102,6 +110,17 @@ func deferPanic() {
 
 	defer panic("deferred panic")
 	println("defer panic")
+}
+
+func runtimeGoexit() {
+	go func() {
+		defer func() {
+			println("Goexit deferred function, recover is nil:", recover() == nil)
+		}()
+
+		runtime.Goexit()
+	}()
+	time.Sleep(time.Millisecond)
 }
 
 func printitf(msg string, itf interface{}) {

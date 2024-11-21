@@ -3,7 +3,7 @@ source_filename = "defer.go"
 target datalayout = "e-m:e-p:32:32-Fi8-i64:64-v128:64:128-a:0:32-n32-S64"
 target triple = "thumbv7m-unknown-unknown-eabi"
 
-%runtime.deferFrame = type { ptr, ptr, [0 x ptr], ptr, i1, %runtime._interface }
+%runtime.deferFrame = type { ptr, ptr, [0 x ptr], ptr, i8, %runtime._interface }
 %runtime._interface = type { ptr, ptr }
 %runtime._defer = type { i32, ptr }
 
