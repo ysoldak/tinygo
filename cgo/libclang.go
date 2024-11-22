@@ -65,9 +65,22 @@ unsigned tinygo_clang_Cursor_isAnonymous(GoCXCursor c);
 unsigned tinygo_clang_Cursor_isBitField(GoCXCursor c);
 unsigned tinygo_clang_Cursor_isMacroFunctionLike(GoCXCursor c);
 
+// Fix some warnings on Windows ARM. Without the __declspec(dllexport), it gives warnings like this:
+//     In file included from _cgo_export.c:4:
+//     cgo-gcc-export-header-prolog:49:34: warning: redeclaration of 'tinygo_clang_globals_visitor' should not add 'dllexport' attribute [-Wdll-attribute-on-redeclaration]
+//     libclang.go:68:5: note: previous declaration is here
+// See: https://github.com/golang/go/issues/49721
+#if defined(_WIN32)
+#define CGO_DECL // __declspec(dllexport)
+#else
+#define CGO_DECL
+#endif
+
+CGO_DECL
 int tinygo_clang_globals_visitor(GoCXCursor c, GoCXCursor parent, CXClientData client_data);
+CGO_DECL
 int tinygo_clang_struct_visitor(GoCXCursor c, GoCXCursor parent, CXClientData client_data);
-int tinygo_clang_enum_visitor(GoCXCursor c, GoCXCursor parent, CXClientData client_data);
+CGO_DECL
 void tinygo_clang_inclusion_visitor(CXFile included_file, CXSourceLocation *inclusion_stack, unsigned include_len, CXClientData client_data);
 */
 import "C"
