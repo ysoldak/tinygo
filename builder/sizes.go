@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -194,11 +195,17 @@ func readProgramSizeFromDWARF(data *dwarf.Data, codeOffset, codeAlignment uint64
 				if !prevLineEntry.EndSequence {
 					// The chunk describes the code from prevLineEntry to
 					// lineEntry.
+					path := prevLineEntry.File.Name
+					if runtime.GOOS == "windows" {
+						// Work around a Clang bug on Windows:
+						// https://github.com/llvm/llvm-project/issues/117317
+						path = strings.ReplaceAll(path, "\\\\", "\\")
+					}
 					line := addressLine{
 						Address: prevLineEntry.Address + codeOffset,
 						Length:  lineEntry.Address - prevLineEntry.Address,
 						Align:   codeAlignment,
-						File:    prevLineEntry.File.Name,
+						File:    path,
 					}
 					if line.Length != 0 {
 						addresses = append(addresses, line)
