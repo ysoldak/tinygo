@@ -200,6 +200,11 @@ func readProgramSizeFromDWARF(data *dwarf.Data, codeOffset, codeAlignment uint64
 						// Work around a Clang bug on Windows:
 						// https://github.com/llvm/llvm-project/issues/117317
 						path = strings.ReplaceAll(path, "\\\\", "\\")
+
+						// wasi-libc likes to use forward slashes, but we
+						// canonicalize everything to use backwards slashes as
+						// is common on Windows.
+						path = strings.ReplaceAll(path, "/", "\\")
 					}
 					line := addressLine{
 						Address: prevLineEntry.Address + codeOffset,
