@@ -83,7 +83,7 @@ func (q *chanQueue) push(node *channelOp) {
 // waiting (for example, when they're part of a select operation) will be
 // skipped.
 // This function must be called with interrupts disabled.
-func (q *chanQueue) pop(chanOp uint64) *channelOp {
+func (q *chanQueue) pop(chanOp uint32) *channelOp {
 	for {
 		if q.first == nil {
 			return nil
@@ -96,11 +96,11 @@ func (q *chanQueue) pop(chanOp uint64) *channelOp {
 		// The new value for the 'data' field will be a combination of the
 		// channel operation and the select index. (The select index is 0 for
 		// non-select channel operations).
-		newDataValue := chanOp | uint64(popped.index<<2)
+		newDataValue := chanOp | popped.index<<2
 
 		// Try to be the first to proceed with this goroutine.
-		if popped.task.Data == chanOperationWaiting {
-			popped.task.Data = newDataValue
+		if popped.task.DataUint32() == chanOperationWaiting {
+			popped.task.SetDataUint32(newDataValue)
 			return popped
 		}
 	}
@@ -123,7 +123,7 @@ func (q *chanQueue) remove(remove *channelOp) {
 type channelOp struct {
 	next  *channelOp
 	task  *task.Task
-	index uintptr        // select index, 0 for non-select operation
+	index uint32         // select index, 0 for non-select operation
 	value unsafe.Pointer // if this is a sender, this is the value to send
 }
 
@@ -239,7 +239,7 @@ func chanSend(ch *channel, value unsafe.Pointer, op *channelOp) {
 
 	// Can't proceed. Add us to the list of senders and wait until we're awoken.
 	t := task.Current()
-	t.Data = chanOperationWaiting
+	t.SetDataUint32(chanOperationWaiting)
 	op.task = t
 	op.index = 0
 	op.value = value
@@ -251,7 +251,7 @@ func chanSend(ch *channel, value unsafe.Pointer, op *channelOp) {
 
 	// Check whether the sent happened normally (not because the channel was
 	// closed while sending).
-	if t.Data == chanOperationClosed {
+	if t.DataUint32() == chanOperationClosed {
 		// Oops, this channel was closed while sending!
 		runtimePanic("send on closed channel")
 	}
@@ -313,7 +313,7 @@ func chanRecv(ch *channel, value unsafe.Pointer, op *channelOp) bool {
 	// until we're awoken.
 	t := task.Current()
 	t.Ptr = value
-	t.Data = chanOperationWaiting
+	t.SetDataUint32(chanOperationWaiting)
 	op.task = t
 	op.index = 0
 	ch.receivers.push(op)
@@ -323,7 +323,7 @@ func chanRecv(ch *channel, value unsafe.Pointer, op *channelOp) bool {
 	task.Pause()
 
 	// Return whether the receive happened from a closed channel.
-	return t.Data != chanOperationClosed
+	return t.DataUint32() != chanOperationClosed
 }
 
 // chanClose closes the given channel. If this channel has a receiver or is
@@ -375,10 +375,10 @@ func chanClose(ch *channel) {
 
 // chanSelect implements blocking or non-blocking select operations.
 // The 'ops' slice must be set if (and only if) this is a blocking select.
-func chanSelect(recvbuf unsafe.Pointer, states []chanSelectState, ops []channelOp) (uintptr, bool) {
+func chanSelect(recvbuf unsafe.Pointer, states []chanSelectState, ops []channelOp) (uint32, bool) {
 	mask := interrupt.Disable()
 
-	const selectNoIndex = ^uintptr(0)
+	const selectNoIndex = ^uint32(0)
 	selectIndex := selectNoIndex
 	selectOk := true
 
@@ -393,13 +393,13 @@ func chanSelect(recvbuf unsafe.Pointer, states []chanSelectState, ops []channelO
 
 		if state.value == nil { // chan receive
 			if received, ok := state.ch.tryRecv(recvbuf); received {
-				selectIndex = uintptr(i)
+				selectIndex = uint32(i)
 				selectOk = ok
 				break
 			}
 		} else { // chan send
 			if state.ch.trySend(state.value) {
-				selectIndex = uintptr(i)
+				selectIndex = uint32(i)
 				break
 			}
 		}
@@ -421,14 +421,14 @@ func chanSelect(recvbuf unsafe.Pointer, states []chanSelectState, ops []channelO
 	// will be able to "take" this select operation.
 	t := task.Current()
 	t.Ptr = recvbuf
-	t.Data = chanOperationWaiting
+	t.SetDataUint32(chanOperationWaiting)
 	for i, state := range states {
 		if state.ch == nil {
 			continue
 		}
 		op := &ops[i]
 		op.task = t
-		op.index = uintptr(i)
+		op.index = uint32(i)
 		if state.value == nil { // chan receive
 			state.ch.receivers.push(op)
 		} else { // chan send
@@ -460,8 +460,8 @@ func chanSelect(recvbuf unsafe.Pointer, states []chanSelectState, ops []channelO
 	}
 
 	// Pull the return values out of t.Data (which contains two bitfields).
-	selectIndex = uintptr(t.Data) >> 2
-	selectOk = t.Data&chanOperationMask != chanOperationClosed
+	selectIndex = t.DataUint32() >> 2
+	selectOk = t.DataUint32()&chanOperationMask != chanOperationClosed
 
 	return selectIndex, selectOk
 }

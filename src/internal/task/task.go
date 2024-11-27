@@ -26,6 +26,18 @@ type Task struct {
 	DeferFrame unsafe.Pointer
 }
 
+// DataUint32 returns the Data field as a uint32. The value is only valid after
+// setting it through SetDataUint32.
+func (t *Task) DataUint32() uint32 {
+	return *(*uint32)(unsafe.Pointer(&t.Data))
+}
+
+// SetDataUint32 updates the uint32 portion of the Data field (which could be
+// the first 4 or last 4 bytes depending on the architecture endianness).
+func (t *Task) SetDataUint32(val uint32) {
+	*(*uint32)(unsafe.Pointer(&t.Data)) = val
+}
+
 // getGoroutineStackSize is a compiler intrinsic that returns the stack size for
 // the given function and falls back to the default stack size. It is replaced
 // with a load from a special section just before codegen.

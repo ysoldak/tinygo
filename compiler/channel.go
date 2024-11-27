@@ -4,7 +4,9 @@ package compiler
 // or pseudo-operations that are lowered during goroutine lowering.
 
 import (
+	"fmt"
 	"go/types"
+	"math"
 
 	"github.com/tinygo-org/tinygo/compiler/llvmutil"
 	"golang.org/x/tools/go/ssa"
@@ -122,6 +124,20 @@ func (b *builder) createSelect(expr *ssa.Select) llvm.Value {
 			retval = b.CreateInsertValue(retval, llvm.ConstInt(b.intType, 0xffffffffffffffff, true), 0, "")
 			return retval // {-1, false}
 		}
+	}
+
+	const maxSelectStates = math.MaxUint32 >> 2
+	if len(expr.States) > maxSelectStates {
+		// The runtime code assumes that the number of state must fit in 30 bits
+		// (so the select index can be stored in a uint32 with two bits reserved
+		// for other purposes). It seems unlikely that a real program would have
+		// that many states, but we check for this case anyway to be sure.
+		// We use a uint32 (and not a uintptr or uint64) to avoid 64-bit atomic
+		// operations which aren't available everywhere.
+		b.addError(expr.Pos(), fmt.Sprintf("too many select states: got %d but the maximum supported number is %d", len(expr.States), maxSelectStates))
+
+		// Continue as usual (we'll generate broken code but the error will
+		// prevent the compilation to complete).
 	}
 
 	// This code create a (stack-allocated) slice containing all the select
