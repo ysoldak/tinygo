@@ -21,6 +21,12 @@ import (
 // queue a new scheduler invocation using setTimeout.
 const asyncScheduler = GOOS == "js"
 
+const hasScheduler = true
+
+// Concurrency is not parallelism. While the cooperative scheduler has
+// concurrency, it does not have parallelism.
+const hasParallelism = false
+
 // Queues used by the scheduler.
 var (
 	runqueue           task.Queue
@@ -248,5 +254,3 @@ func run() {
 	}()
 	scheduler(false)
 }
-
-const hasScheduler = true
