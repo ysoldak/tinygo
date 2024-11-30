@@ -362,7 +362,12 @@ func signal_enable(s uint32) {
 		// receivedSignals into a uint32 array.
 		runtimePanicAt(returnAddress(0), "unsupported signal number")
 	}
+
+	// This is intentonally a non-atomic store. This is safe, since hasSignals
+	// is only used in waitForEvents which is only called when there's a
+	// scheduler (and therefore there is no parallelism).
 	hasSignals = true
+
 	// It's easier to implement this function in C.
 	tinygo_signal_enable(s)
 }
@@ -391,6 +396,9 @@ func signal_disable(s uint32) {
 func signal_waitUntilIdle() {
 	// Wait until signal_recv has processed all signals.
 	for receivedSignals.Load() != 0 {
+		// TODO: this becomes a busy loop when using threads.
+		// We might want to pause until signal_recv has no more incoming signals
+		// to process.
 		Gosched()
 	}
 }
@@ -434,7 +442,7 @@ func tinygo_signal_handler(s int32) {
 
 // Task waiting for a signal to arrive, or nil if it is running or there are no
 // signals.
-var signalRecvWaiter *task.Task
+var signalRecvWaiter atomic.Pointer[task.Task]
 
 //go:linkname signal_recv os/signal.signal_recv
 func signal_recv() uint32 {
@@ -443,7 +451,10 @@ func signal_recv() uint32 {
 		val := receivedSignals.Load()
 		if val == 0 {
 			// There are no signals to receive. Sleep until there are.
-			signalRecvWaiter = task.Current()
+			if signalRecvWaiter.Swap(task.Current()) != nil {
+				// We expect only a single goroutine to call signal_recv.
+				runtimePanic("signal_recv called concurrently")
+			}
 			task.Pause()
 			continue
 		}
@@ -474,10 +485,11 @@ func signal_recv() uint32 {
 // Return true if it was reactivated (and therefore the scheduler should run
 // again), and false otherwise.
 func checkSignals() bool {
-	if receivedSignals.Load() != 0 && signalRecvWaiter != nil {
-		scheduleTask(signalRecvWaiter)
-		signalRecvWaiter = nil
-		return true
+	if receivedSignals.Load() != 0 {
+		if waiter := signalRecvWaiter.Swap(nil); waiter != nil {
+			scheduleTask(waiter)
+			return true
+		}
 	}
 	return false
 }
