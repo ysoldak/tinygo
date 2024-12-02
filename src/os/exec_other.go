@@ -1,4 +1,4 @@
-//go:build (!aix && !android && !freebsd && !linux && !netbsd && !openbsd && !plan9 && !solaris) || baremetal || tinygo.wasm
+//go:build (!aix && !android && !freebsd && !linux && !netbsd && !openbsd && !plan9 && !solaris) || baremetal || tinygo.wasm || nintendoswitch
 
 package os
 

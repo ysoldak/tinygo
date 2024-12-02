@@ -1,4 +1,4 @@
-//go:build linux && !baremetal && !tinygo.wasm
+//go:build linux && !baremetal && !tinygo.wasm && !nintendoswitch
 
 package os
 
