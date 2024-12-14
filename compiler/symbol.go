@@ -231,6 +231,15 @@ func (c *compilerContext) getFunction(fn *ssa.Function) (llvm.Type, llvm.Value) 
 		}
 	}
 
+	// Build the function if needed.
+	c.maybeCreateSyntheticFunction(fn, llvmFn)
+
+	return fnType, llvmFn
+}
+
+// If this is a synthetic function (such as a generic function or a wrapper),
+// create it now.
+func (c *compilerContext) maybeCreateSyntheticFunction(fn *ssa.Function, llvmFn llvm.Value) {
 	// Synthetic functions are functions that do not appear in the source code,
 	// they are artificially constructed. Usually they are wrapper functions
 	// that are not referenced anywhere except in a SSA call instruction so
@@ -238,6 +247,10 @@ func (c *compilerContext) getFunction(fn *ssa.Function) (llvm.Type, llvm.Value) 
 	// The exception is the package initializer, which does appear in the
 	// *ssa.Package members and so shouldn't be created here.
 	if fn.Synthetic != "" && fn.Synthetic != "package initializer" && fn.Synthetic != "generic function" && fn.Synthetic != "range-over-func yield" {
+		if len(fn.Blocks) == 0 {
+			c.addError(fn.Pos(), "missing function body")
+			return
+		}
 		irbuilder := c.ctx.NewBuilder()
 		b := newBuilder(c, irbuilder, fn)
 		b.createFunction()
@@ -245,8 +258,6 @@ func (c *compilerContext) getFunction(fn *ssa.Function) (llvm.Type, llvm.Value) 
 		llvmFn.SetLinkage(llvm.LinkOnceODRLinkage)
 		llvmFn.SetUnnamedAddr(true)
 	}
-
-	return fnType, llvmFn
 }
 
 // getFunctionInfo returns information about a function that is not directly
