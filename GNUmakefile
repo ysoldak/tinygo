@@ -853,6 +853,8 @@ endif
 	@$(MD5SUM) test.hex
 	$(TINYGO) build -size short -o test.hex -target=maixbit             examples/blinky1
 	@$(MD5SUM) test.hex
+	$(TINYGO) build -size short -o test.hex -target=tkey                examples/blinky1
+	@$(MD5SUM) test.hex
 ifneq ($(WASM), 0)
 	$(TINYGO) build -size short -o wasm.wasm -target=wasm               examples/wasm/export
 	$(TINYGO) build -size short -o wasm.wasm -target=wasm               examples/wasm/main
