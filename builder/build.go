@@ -931,15 +931,16 @@ func Build(pkgName, outpath, tmpdir string, config *compileopts.Config) (BuildRe
 			}
 
 			// Print code size if requested.
-			if config.Options.PrintSizes == "short" || config.Options.PrintSizes == "full" {
+			if config.Options.PrintSizes != "" {
 				sizes, err := loadProgramSize(result.Executable, result.PackagePathMap)
 				if err != nil {
 					return err
 				}
-				if config.Options.PrintSizes == "short" {
+				switch config.Options.PrintSizes {
+				case "short":
 					fmt.Printf("   code    data     bss |   flash     ram\n")
 					fmt.Printf("%7d %7d %7d | %7d %7d\n", sizes.Code+sizes.ROData, sizes.Data, sizes.BSS, sizes.Flash(), sizes.RAM())
-				} else {
+				case "full":
 					if !config.Debug() {
 						fmt.Println("warning: data incomplete, remove the -no-debug flag for more detail")
 					}
@@ -951,6 +952,13 @@ func Build(pkgName, outpath, tmpdir string, config *compileopts.Config) (BuildRe
 					}
 					fmt.Printf("------------------------------- | --------------- | -------\n")
 					fmt.Printf("%7d %7d %7d %7d | %7d %7d | total\n", sizes.Code, sizes.ROData, sizes.Data, sizes.BSS, sizes.Code+sizes.ROData+sizes.Data, sizes.Data+sizes.BSS)
+				case "html":
+					const filename = "size-report.html"
+					err := writeSizeReport(sizes, filename, pkgName)
+					if err != nil {
+						return err
+					}
+					fmt.Println("Wrote size report to", filename)
 				}
 			}
 

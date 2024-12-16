@@ -1509,7 +1509,7 @@ func main() {
 		stackSize = uint64(size)
 		return err
 	})
-	printSize := flag.String("size", "", "print sizes (none, short, full)")
+	printSize := flag.String("size", "", "print sizes (none, short, full, html)")
 	printStacks := flag.Bool("print-stacks", false, "print stack sizes of goroutines")
 	printAllocsString := flag.String("print-allocs", "", "regular expression of functions for which heap allocations should be printed")
 	printCommands := flag.Bool("x", false, "Print commands")

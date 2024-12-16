@@ -25,7 +25,7 @@ const sizesDebug = false
 
 // programSize contains size statistics per package of a compiled program.
 type programSize struct {
-	Packages map[string]packageSize
+	Packages map[string]*packageSize
 	Code     uint64
 	ROData   uint64
 	Data     uint64
@@ -56,10 +56,11 @@ func (ps *programSize) RAM() uint64 {
 // packageSize contains the size of a package, calculated from the linked object
 // file.
 type packageSize struct {
-	Code   uint64
-	ROData uint64
-	Data   uint64
-	BSS    uint64
+	Program *programSize
+	Code    uint64
+	ROData  uint64
+	Data    uint64
+	BSS     uint64
 }
 
 // Flash usage in regular microcontrollers.
@@ -70,6 +71,12 @@ func (ps *packageSize) Flash() uint64 {
 // Static RAM usage in regular microcontrollers.
 func (ps *packageSize) RAM() uint64 {
 	return ps.Data + ps.BSS
+}
+
+// Flash usage in regular microcontrollers, as a percentage of the total flash
+// usage of the program.
+func (ps *packageSize) FlashPercent() float64 {
+	return float64(ps.Flash()) / float64(ps.Program.Flash()) * 100
 }
 
 // A mapping of a single chunk of code or data to a file path.
@@ -785,49 +792,48 @@ func loadProgramSize(path string, packagePathMap map[string]string) (*programSiz
 
 	// Now finally determine the binary/RAM size usage per package by going
 	// through each allocated section.
-	sizes := make(map[string]packageSize)
+	sizes := make(map[string]*packageSize)
+	program := &programSize{
+		Packages: sizes,
+	}
+	getSize := func(path string) *packageSize {
+		if field, ok := sizes[path]; ok {
+			return field
+		}
+		field := &packageSize{Program: program}
+		sizes[path] = field
+		return field
+	}
 	for _, section := range sections {
 		switch section.Type {
 		case memoryCode:
 			readSection(section, addresses, func(path string, size uint64, isVariable bool) {
-				field := sizes[path]
+				field := getSize(path)
 				if isVariable {
 					field.ROData += size
 				} else {
 					field.Code += size
 				}
-				sizes[path] = field
 			}, packagePathMap)
 		case memoryROData:
 			readSection(section, addresses, func(path string, size uint64, isVariable bool) {
-				field := sizes[path]
-				field.ROData += size
-				sizes[path] = field
+				getSize(path).ROData += size
 			}, packagePathMap)
 		case memoryData:
 			readSection(section, addresses, func(path string, size uint64, isVariable bool) {
-				field := sizes[path]
-				field.Data += size
-				sizes[path] = field
+				getSize(path).Data += size
 			}, packagePathMap)
 		case memoryBSS:
 			readSection(section, addresses, func(path string, size uint64, isVariable bool) {
-				field := sizes[path]
-				field.BSS += size
-				sizes[path] = field
+				getSize(path).BSS += size
 			}, packagePathMap)
 		case memoryStack:
 			// We store the C stack as a pseudo-package.
-			sizes["C stack"] = packageSize{
-				BSS: section.Size,
-			}
+			getSize("C stack").BSS += section.Size
 		}
 	}
 
 	// ...and summarize the results.
-	program := &programSize{
-		Packages: sizes,
-	}
 	for _, pkg := range sizes {
 		program.Code += pkg.Code
 		program.ROData += pkg.ROData
