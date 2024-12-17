@@ -11,6 +11,12 @@
   border-left: calc(var(--bs-border-width) * 2) solid currentcolor;
 }
 
+/* Hover on only the rows that are clickable. */
+.row-package:hover > * {
+  --bs-table-color-state: var(--bs-table-hover-color);
+  --bs-table-bg-state: var(--bs-table-hover-bg);
+}
+
     </style>
   </head>
   <body>
@@ -29,6 +35,9 @@
       <p>The binary size consists of code, read-only data, and data. On microcontrollers, this is exactly the size of the firmware image. On other systems, there is some extra overhead: binary metadata (headers of the ELF/MachO/COFF file), debug information, exception tables, symbol names, etc. Using <code>-no-debug</code> strips most of those.</p>
 
       <h2>Program breakdown</h2>
+
+      <p>You can click on the rows below to see which files contribute to the binary size.</p>
+
       <div class="table-responsive">
         <table class="table w-auto">
           <thead>
@@ -42,8 +51,8 @@
             </tr>
           </thead>
           <tbody class="table-group-divider">
-            {{range .sizes}}
-            <tr>
+            {{range $i, $pkg := .sizes}}
+            <tr class="row-package" data-collapse=".collapse-row-{{$i}}">
               <td>{{.Name}}</td>
               <td class="table-vertical-border">{{.Size.Code}}</td>
               <td>{{.Size.ROData}}</td>
@@ -53,6 +62,24 @@
                 {{.Size.Flash}}
               </td>
             </tr>
+            {{range $filename, $sizes := .Size.Sub}}
+            <tr class="table-secondary collapse collapse-row-{{$i}}">
+              <td class="ps-4">
+                {{if eq $filename ""}}
+                  (unknown file)
+                {{else}}
+                  {{$filename}}
+                {{end}}
+              </td>
+              <td class="table-vertical-border">{{$sizes.Code}}</td>
+              <td>{{$sizes.ROData}}</td>
+              <td>{{$sizes.Data}}</td>
+              <td>{{$sizes.BSS}}</td>
+              <td class="table-vertical-border" style="background: linear-gradient(to right, var(--bs-info-bg-subtle) {{$sizes.FlashPercent}}%, var(--bs-table-bg) {{$sizes.FlashPercent}}%)">
+                {{$sizes.Flash}}
+              </td>
+            </tr>
+            {{end}}
             {{end}}
           </tbody>
           <tfoot class="table-group-divider">
@@ -68,5 +95,15 @@
         </table>
       </div>
     </div>
+    <script>
+// Make table rows toggleable to show filenames.
+for (let clickable of document.querySelectorAll('.row-package')) {
+  clickable.addEventListener('click', e => {
+    for (let row of document.querySelectorAll(clickable.dataset.collapse)) {
+      row.classList.toggle('show');
+    }
+  });
+}
+    </script>
   </body>
 </html>
