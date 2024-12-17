@@ -1,4 +1,4 @@
-//go:build rp2040
+//go:build rp2040 || rp2350
 
 package machine
 
@@ -8,7 +8,7 @@ import (
 	"internal/itoa"
 )
 
-// I2C on the RP2040.
+// I2C on the RP2040/RP2350
 var (
 	I2C0  = &_I2C0
 	_I2C0 = I2C{
