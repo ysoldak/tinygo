@@ -1,4 +1,4 @@
-//go:build rp2040
+//go:build rp2040 || rp2350
 
 package machine
 
@@ -207,7 +207,7 @@ func (spi SPI) initSPI(config SPIConfig) (err error) {
 	}
 	err = spi.SetBaudRate(config.Frequency)
 	// Set SPI Format (CPHA and CPOL) and frame format (default is Motorola)
-	spi.setFormat(config.Mode, rp.XIP_SSI_CTRLR0_SPI_FRF_STD)
+	spi.setFormat(config.Mode)
 
 	// Always enable DREQ signals -- harmless if DMA is not listening
 	spi.Bus.SSPDMACR.SetBits(rp.SPI0_SSPDMACR_TXDMAE | rp.SPI0_SSPDMACR_RXDMAE)
@@ -217,14 +217,13 @@ func (spi SPI) initSPI(config SPIConfig) (err error) {
 }
 
 //go:inline
-func (spi SPI) setFormat(mode uint8, frameFormat uint32) {
+func (spi SPI) setFormat(mode uint8) {
 	cpha := uint32(mode) & 1
 	cpol := uint32(mode>>1) & 1
 	spi.Bus.SSPCR0.ReplaceBits(
 		(cpha<<rp.SPI0_SSPCR0_SPH_Pos)|
 			(cpol<<rp.SPI0_SSPCR0_SPO_Pos)|
-			(uint32(7)<<rp.SPI0_SSPCR0_DSS_Pos)| // Set databits (SPI word length) to 8 bits.
-			(frameFormat&0b11)<<rp.SPI0_SSPCR0_FRF_Pos, // Frame format bits 4:5
+			(uint32(7)<<rp.SPI0_SSPCR0_DSS_Pos), // Set databits (SPI word length) to 8 bits.
 		rp.SPI0_SSPCR0_SPH_Msk|rp.SPI0_SSPCR0_SPO_Msk|rp.SPI0_SSPCR0_DSS_Msk|rp.SPI0_SSPCR0_FRF_Msk, 0)
 }
 
