@@ -49,26 +49,26 @@ const (
 )
 
 const (
-	ClkGPOUT0 clockIndex = iota // GPIO Muxing 0
-	ClkGPOUT1                   // GPIO Muxing 1
-	ClkGPOUT2                   // GPIO Muxing 2
-	ClkGPOUT3                   // GPIO Muxing 3
-	ClkRef                      // Watchdog and timers reference clock
-	ClkSys                      // Processors, bus fabric, memory, memory mapped registers
-	ClkPeri                     // Peripheral clock for UART and SPI
+	clkGPOUT0 clockIndex = iota // GPIO Muxing 0
+	clkGPOUT1                   // GPIO Muxing 1
+	clkGPOUT2                   // GPIO Muxing 2
+	clkGPOUT3                   // GPIO Muxing 3
+	clkRef                      // Watchdog and timers reference clock
+	clkSys                      // Processors, bus fabric, memory, memory mapped registers
+	clkPeri                     // Peripheral clock for UART and SPI
 	ClkHSTX                     // High speed interface
-	ClkUSB                      // USB clock
-	ClkADC                      // ADC clock
-	NumClocks
+	clkUSB                      // USB clock
+	clkADC                      // ADC clock
+	numClocks
 )
 
-func CalcClockDiv(srcFreq, freq uint32) uint32 {
+func calcClockDiv(srcFreq, freq uint32) uint32 {
 	// Div register is 4.16 int.frac divider so multiply by 2^16 (left shift by 16)
 	return uint32((uint64(srcFreq) << 16) / uint64(freq))
 }
 
 type clocksType struct {
-	clk               [NumClocks]clockType
+	clk               [numClocks]clockType
 	dftclk_xosc_ctrl  volatile.Register32
 	dftclk_rosc_ctrl  volatile.Register32
 	dftclk_lposc_ctrl volatile.Register32
