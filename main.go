@@ -1062,9 +1062,8 @@ func findFATMounts(options *compileopts.Options) ([]mountPoint, error) {
 		return points, nil
 	case "windows":
 		// Obtain a list of all currently mounted volumes.
-		cmd := executeCommand(options, "wmic",
-			"PATH", "Win32_LogicalDisk",
-			"get", "DeviceID,VolumeName,FileSystem,DriveType")
+		cmd := executeCommand(options, "powershell", "-c",
+			"Get-CimInstance -ClassName Win32_LogicalDisk | Select-Object DeviceID, DriveType, FileSystem, VolumeName")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err := cmd.Run()
